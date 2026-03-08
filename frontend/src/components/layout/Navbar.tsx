@@ -244,7 +244,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           {user ? (
             <>
-              {["admin", "accountant"].includes(user.role) && (
+              {user.role === "admin" && (
                 <Link
                   href="/admin/users"
                   className="text-sm font-medium"
@@ -407,7 +407,7 @@ export default function Navbar() {
             <div className="border-t pt-4" style={{ borderColor: "#DEDEDE" }}>
               {user ? (
                 <div className="flex flex-col gap-3">
-                  {["admin", "accountant"].includes(user.role) && (
+                  {user.role === "admin" && (
                     <Link
                       href="/admin/users"
                       className="text-sm"

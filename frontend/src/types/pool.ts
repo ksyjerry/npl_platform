@@ -24,6 +24,7 @@ export interface PoolListResponse {
 }
 
 export interface PoolCompanyItem {
+  company_id: number;
   name: string;
   advisor: string | null;
   checklist_ok: boolean | null;

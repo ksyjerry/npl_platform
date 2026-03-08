@@ -11,7 +11,7 @@ export const PERMISSIONS = {
   "notice:create": ["admin", "accountant"],
   "notice:edit": ["admin", "accountant"],
   "notice:delete": ["admin", "accountant"],
-  "admin:access": ["admin", "accountant"],
+  "admin:access": ["admin"],
   "consulting:reply": ["admin", "accountant"],
   "consulting:view": ["admin", "accountant", "seller", "buyer"],
 } as const;

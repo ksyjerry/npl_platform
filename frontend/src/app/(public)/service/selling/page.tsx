@@ -111,12 +111,6 @@ const FAQ_ITEMS = [
   },
 ];
 
-const NOTICES = [
-  "본 플랫폼을 통한 매각 자문 서비스는 금융기관 및 적격 법인을 대상으로 합니다. 개인 차주의 채권 매각 상담은 취급하지 않습니다.",
-  "상담 신청 후 담당자 배정까지 영업일 기준 2일 이내 연락드립니다. 긴급 건은 상담 내용에 '긴급'을 명시해 주세요.",
-  "Data Disk 제출 등 실사 과정에서 개인정보가 포함된 경우, 별도의 개인정보처리 동의 및 비식별화 절차가 적용됩니다.",
-  "본 페이지에 기재된 프로세스 및 기간은 일반적인 기준이며, 거래 특성에 따라 변경될 수 있습니다.",
-];
 
 export default function SellingPage() {
   return (
@@ -194,7 +188,7 @@ export default function SellingPage() {
       </Section>
 
       {/* ⑤ 자주 묻는 질문 */}
-      <Section bg="white">
+      <Section bg="gray">
         <h2
           className="text-2xl font-semibold mb-8"
           style={{ color: "#2D2D2D", lineHeight: 1.3 }}
@@ -202,28 +196,6 @@ export default function SellingPage() {
           자주 묻는 질문
         </h2>
         <Accordion items={FAQ_ITEMS} />
-      </Section>
-
-      {/* ⑥ 서비스 이용 안내 */}
-      <Section bg="gray">
-        <h2
-          className="text-2xl font-semibold mb-8"
-          style={{ color: "#2D2D2D", lineHeight: 1.3 }}
-        >
-          서비스 이용 안내
-        </h2>
-        <div
-          className="max-w-3xl mx-auto border bg-white p-8"
-          style={{ borderColor: "#DEDEDE", borderRadius: "4px" }}
-        >
-          <ul className="space-y-4">
-            {NOTICES.map((n, i) => (
-              <li key={i} className="text-sm leading-relaxed" style={{ color: "#464646" }}>
-                • {n}
-              </li>
-            ))}
-          </ul>
-        </div>
       </Section>
 
       {/* ⑦ CTA */}

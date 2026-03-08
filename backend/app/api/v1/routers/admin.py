@@ -32,7 +32,7 @@ async def list_users(
     role: Optional[str] = None,
     page: int = 1,
     size: int = 20,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).get_users(role=role, page=page, size=size)
@@ -43,7 +43,7 @@ async def update_user(
     user_id: int,
     data: UserUpdateSchema,
     request: Request,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).update_user(user_id, data, admin, request)
@@ -53,7 +53,7 @@ async def update_user(
 async def reset_password(
     user_id: int,
     request: Request,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).reset_password(user_id, admin, request)
@@ -77,7 +77,7 @@ async def list_companies(
 async def create_company(
     data: CompanyCreateSchema,
     request: Request,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).create_company(data, admin, request)
@@ -88,7 +88,7 @@ async def update_company(
     company_id: int,
     data: CompanyUpdateSchema,
     request: Request,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).update_company(company_id, data, admin, request)
@@ -98,7 +98,7 @@ async def update_company(
 async def delete_company(
     company_id: int,
     request: Request,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     await AdminService(db).delete_company(company_id, admin, request)
@@ -113,7 +113,7 @@ async def list_consulting(
     status: Optional[str] = None,
     page: int = 1,
     size: int = 20,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).get_consultings(
@@ -128,7 +128,7 @@ async def reply_consulting(
     consulting_id: int,
     data: ConsultingReplySchema,
     request: Request,
-    admin: User = Depends(require_role("admin", "accountant")),
+    admin: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).reply_consulting(consulting_id, data, admin, request)

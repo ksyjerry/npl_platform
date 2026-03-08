@@ -96,6 +96,7 @@ class PoolRepository:
         rows = result.fetchall()
         return [
             {
+                "company_id": pc.company_id,
                 "name": cname,
                 "advisor": pc.advisor,
                 "checklist_ok": pc.buyer_checklist_ok,

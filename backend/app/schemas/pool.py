@@ -66,10 +66,13 @@ class PoolUpdateSchema(BaseModel):
     resale_bond_count: Optional[int] = None
     resale_opb: Optional[int] = None
     remarks: Optional[str] = None
+    seller_companies: Optional[list[PoolCompanyInput]] = None
+    buyer_companies: Optional[list[PoolCompanyInput]] = None
 
 
 class PoolCompanyItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+    company_id: int
     name: str
     advisor: Optional[str] = None
     checklist_ok: Optional[bool] = None

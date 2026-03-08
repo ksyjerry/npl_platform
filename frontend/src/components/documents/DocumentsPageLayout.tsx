@@ -33,32 +33,31 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
 
   const totalPages = Math.ceil(total / size);
 
-  // Fetch pools matching the search query
-  const searchPools = useCallback(async (query: string) => {
-    if (query.trim().length === 0) {
-      setPoolOptions([]);
-      return;
-    }
-    setSearchLoading(true);
-    try {
-      const { data } = await api.get("/pools", { params: { page: 1, size: 50 } });
-      const filtered = (data.items as PoolOption[]).filter((p) =>
-        p.name.toLowerCase().includes(query.toLowerCase())
-      );
-      setPoolOptions(filtered);
-    } catch {
-      setPoolOptions([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, []);
+  const [allPools, setAllPools] = useState<PoolOption[]>([]);
 
-  // Debounced search
+  // Fetch all pools once
   useEffect(() => {
-    if (!poolSearch.trim() || selectedPool) return;
-    const timer = setTimeout(() => searchPools(poolSearch), 300);
-    return () => clearTimeout(timer);
-  }, [poolSearch, searchPools, selectedPool]);
+    if (allPools.length > 0) return;
+    setSearchLoading(true);
+    api.get("/pools", { params: { page: 1, size: 200 } })
+      .then(({ data }) => {
+        setAllPools(data.items);
+        setPoolOptions(data.items);
+      })
+      .catch(() => {})
+      .finally(() => setSearchLoading(false));
+  }, [allPools.length]);
+
+  // Filter pools by search keyword
+  useEffect(() => {
+    if (selectedPool) return;
+    if (!poolSearch.trim()) {
+      setPoolOptions(allPools);
+    } else {
+      const q = poolSearch.toLowerCase();
+      setPoolOptions(allPools.filter((p) => p.name.toLowerCase().includes(q)));
+    }
+  }, [poolSearch, allPools, selectedPool]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -134,7 +133,7 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
                     setShowDropdown(true);
                   }}
                   onFocus={() => {
-                    if (poolSearch.trim() && !selectedPool) setShowDropdown(true);
+                    if (!selectedPool) setShowDropdown(true);
                   }}
                   className="w-full border text-sm outline-none"
                   style={{
@@ -156,7 +155,7 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
                 )}
               </div>
               {/* Dropdown */}
-              {showDropdown && !selectedPool && poolSearch.trim() && (
+              {showDropdown && !selectedPool && (
                 <div
                   className="absolute z-10 left-0 right-0 mt-1 bg-white border max-h-48 overflow-y-auto"
                   style={{

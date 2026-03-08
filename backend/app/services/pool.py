@@ -3,6 +3,8 @@ from datetime import datetime
 from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import delete
+
 from app.models.audit_log import AuditLog
 from app.models.pool import Pool
 from app.models.pool_company import PoolCompany
@@ -158,12 +160,43 @@ class PoolService:
             if hasattr(v, "isoformat"):
                 old_data[k] = v.isoformat()
 
-        # Apply updates
-        update_data = data.model_dump(exclude_none=True, exclude={"reason"})
+        # Apply updates (exclude company fields from pool column updates)
+        update_data = data.model_dump(
+            exclude_none=True,
+            exclude={"reason", "seller_companies", "buyer_companies"},
+        )
         for field, value in update_data.items():
             setattr(pool, field, value)
         pool.updated_by = user.id
         pool.updated_at = datetime.utcnow()
+
+        # Update pool_companies if provided
+        if data.seller_companies is not None:
+            await self.db.execute(
+                delete(PoolCompany).where(
+                    PoolCompany.pool_id == pool_id,
+                    PoolCompany.role == "seller",
+                )
+            )
+            for sc in data.seller_companies:
+                self.db.add(PoolCompany(
+                    pool_id=pool_id, company_id=sc.company_id,
+                    role="seller", advisor=sc.advisor,
+                ))
+
+        if data.buyer_companies is not None:
+            await self.db.execute(
+                delete(PoolCompany).where(
+                    PoolCompany.pool_id == pool_id,
+                    PoolCompany.role == "buyer",
+                )
+            )
+            for bc in data.buyer_companies:
+                self.db.add(PoolCompany(
+                    pool_id=pool_id, company_id=bc.company_id,
+                    role="buyer", advisor=bc.advisor,
+                    buyer_checklist_ok=bc.buyer_checklist_ok,
+                ))
 
         # Build new data for audit
         new_data = {
