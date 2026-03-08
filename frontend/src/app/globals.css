@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+:root {
+  --pwc-orange: #D04A02;
+  --pwc-orange-lt: #EB8C00;
+  --pwc-red: #E0301E;
+  --pwc-red-dark: #A32020;
+  --gray-900: #1A1A1A;
+  --gray-800: #2D2D2D;
+  --gray-700: #464646;
+  --gray-500: #7D7D7D;
+  --gray-200: #DEDEDE;
+  --gray-100: #F5F5F5;
+  --gray-050: #FAFAFA;
+  --white: #FFFFFF;
+}
+
+body {
+  color: var(--gray-800);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* PwC brand focus ring */
+:focus-visible {
+  outline: 2px solid var(--pwc-orange);
+  outline-offset: 2px;
+}
+
+/* Orange divider utility */
+.pwc-divider {
+  border-bottom: 4px solid var(--pwc-orange);
+}

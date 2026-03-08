@@ -1,0 +1,36 @@
+# FastAPI + ASGI
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+greenlet==3.1.1
+
+# Redis
+redis[hiredis]==5.2.1
+
+# Auth
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+bcrypt==4.2.1
+
+# Validation / Settings
+pydantic[email-validator]==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# Crypto (AES-256 file path encryption)
+cryptography==44.0.0
+
+# File validation
+python-magic==0.4.27
+
+# CORS / HTTP
+python-multipart==0.0.20
+
+# Dev / Test
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1

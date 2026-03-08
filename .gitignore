@@ -1,0 +1,24 @@
+# 환경변수
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# 업로드 파일 (mock 모드)
+uploads/
+
+# Node
+node_modules/
+
+# 빌드 결과물
+frontend/.next/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
