@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   "admin:access": ["admin"],
   "consulting:reply": ["admin", "accountant"],
   "consulting:view": ["admin", "accountant", "seller", "buyer"],
+  "document:delete:others": ["admin", "accountant"],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

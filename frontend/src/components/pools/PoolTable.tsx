@@ -4,8 +4,10 @@ import Link from "next/link";
 import type { PoolListItem } from "@/types/pool";
 import PoolStatusBadge from "./PoolStatusBadge";
 
-function masked(value: string | null): string {
-  return value ?? "—";
+function masked(value: string | string[] | null): string {
+  if (value === null) return "—";
+  if (Array.isArray(value)) return value.join(", ") || "—";
+  return value;
 }
 
 function formatNumber(value: number | null): string {

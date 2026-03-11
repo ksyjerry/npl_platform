@@ -24,6 +24,9 @@ email-validator==2.2.0
 # Crypto (AES-256 file path encryption)
 cryptography==44.0.0
 
+# Excel
+openpyxl==3.1.5
+
 # File validation
 python-magic==0.4.27
 

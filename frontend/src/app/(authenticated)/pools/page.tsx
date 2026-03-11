@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePools } from "@/hooks/usePools";
 import PoolTable from "@/components/pools/PoolTable";
@@ -13,8 +14,36 @@ const STATUS_TABS = [
 ];
 
 export default function PoolsPage() {
-  const { items, total, page, setPage, status, setStatus, loading, error, size } =
+  const { items, total, page, setPage, status, setStatus, filters, setFilters, loading, error, size } =
     usePools();
+
+  // Filter bar state (local with debounce)
+  const [filterName, setFilterName] = useState("");
+  const [filterSeller, setFilterSeller] = useState("");
+  const [filterCutoffFrom, setFilterCutoffFrom] = useState("");
+  const [filterCutoffTo, setFilterCutoffTo] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setFilters({
+        name: filterName || undefined,
+        seller_name: filterSeller || undefined,
+        cutoff_from: filterCutoffFrom || undefined,
+        cutoff_to: filterCutoffTo || undefined,
+      });
+      setPage(1);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [filterName, filterSeller, filterCutoffFrom, filterCutoffTo]);
+
+  const resetFilters = () => {
+    setFilterName("");
+    setFilterSeller("");
+    setFilterCutoffFrom("");
+    setFilterCutoffTo("");
+  };
 
   const totalPages = Math.ceil(total / size);
 
@@ -69,6 +98,59 @@ export default function PoolsPage() {
             {tab.label}
           </button>
         ))}
+      </div>
+
+      {/* Filter bar (CR-09) */}
+      <div className="px-8 py-3 flex flex-wrap gap-3 items-end" style={{ borderBottom: "1px solid #DEDEDE" }}>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: "#7D7D7D" }}>Pool명</label>
+          <input
+            type="text"
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+            className="border text-sm outline-none"
+            style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "6px 10px", width: "160px" }}
+            placeholder="Pool명 검색"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: "#7D7D7D" }}>양도인명</label>
+          <input
+            type="text"
+            value={filterSeller}
+            onChange={(e) => setFilterSeller(e.target.value)}
+            className="border text-sm outline-none"
+            style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "6px 10px", width: "160px" }}
+            placeholder="양도인 검색"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: "#7D7D7D" }}>자산확정일</label>
+          <div className="flex items-center gap-1">
+            <input
+              type="date"
+              value={filterCutoffFrom}
+              onChange={(e) => setFilterCutoffFrom(e.target.value)}
+              className="border text-sm outline-none"
+              style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "6px 10px" }}
+            />
+            <span className="text-sm" style={{ color: "#7D7D7D" }}>~</span>
+            <input
+              type="date"
+              value={filterCutoffTo}
+              onChange={(e) => setFilterCutoffTo(e.target.value)}
+              className="border text-sm outline-none"
+              style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "6px 10px" }}
+            />
+          </div>
+        </div>
+        <button
+          onClick={resetFilters}
+          className="text-sm font-medium px-3 py-1.5 border"
+          style={{ borderColor: "#DEDEDE", borderRadius: "4px", color: "#7D7D7D" }}
+        >
+          초기화
+        </button>
       </div>
 
       {/* Content */}

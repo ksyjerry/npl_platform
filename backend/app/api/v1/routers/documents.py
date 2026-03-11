@@ -7,6 +7,7 @@ from app.api.v1.dependencies.auth import get_current_user, require_role
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.document import (
+    DocumentDeleteSchema,
     DocumentItem,
     DocumentListResponse,
     DocumentUpdateSchema,
@@ -69,3 +70,15 @@ async def update_document(
     storage: FileStorageService = Depends(get_storage),
 ):
     return await DocumentService(db, storage).update(doc_id, data, user, request)
+
+
+@router.delete("/{doc_id}", status_code=204)
+async def delete_document(
+    doc_id: int,
+    data: DocumentDeleteSchema,
+    request: Request,
+    user: User = Depends(require_role("admin", "accountant", "seller", "buyer")),
+    db: AsyncSession = Depends(get_db),
+    storage: FileStorageService = Depends(get_storage),
+):
+    await DocumentService(db, storage).delete(doc_id, data, user, request)

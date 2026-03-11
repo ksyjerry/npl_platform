@@ -5,6 +5,7 @@ import { useDocuments } from "@/hooks/useDocuments";
 import DocumentTable from "@/components/documents/DocumentTable";
 import FileUploadZone from "@/components/documents/FileUploadZone";
 import api from "@/lib/api";
+import { getAccessToken, parseTokenPayload } from "@/lib/auth";
 
 interface PoolOption {
   id: number;
@@ -22,6 +23,12 @@ interface Props {
 export default function DocumentsPageLayout({ title, subtitle, roleType, canWrite, hideTitle }: Props) {
   const { items, total, page, setPage, loading, error, size, refresh } = useDocuments(roleType);
   const [showUpload, setShowUpload] = useState(false);
+
+  // Get current user info for DocumentTable actions
+  const token = getAccessToken();
+  const payload = token ? parseTokenPayload(token) : null;
+  const currentUserId = payload?.sub ? Number(payload.sub) : undefined;
+  const currentUserRole = (payload?.role as string) || "";
 
   // Pool name search state
   const [poolSearch, setPoolSearch] = useState("");
@@ -212,7 +219,13 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
         ) : error ? (
           <div className="text-center py-16" style={{ color: "#E0301E" }}>{error}</div>
         ) : (
-          <DocumentTable items={items} startIndex={(page - 1) * size} />
+          <DocumentTable
+            items={items}
+            startIndex={(page - 1) * size}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
+            onRefresh={refresh}
+          />
         )}
       </div>
 

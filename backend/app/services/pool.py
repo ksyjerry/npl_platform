@@ -31,10 +31,18 @@ class PoolService:
         self,
         user: User,
         status: str | None = None,
+        name: str | None = None,
+        seller_name: str | None = None,
+        cutoff_from=None,
+        cutoff_to=None,
         page: int = 1,
         size: int = 20,
     ) -> PoolListResponse:
-        pools, total = await self.repo.get_all(status=status, page=page, size=size)
+        pools, total = await self.repo.get_all(
+            status=status, name=name, seller_name=seller_name,
+            cutoff_from=cutoff_from, cutoff_to=cutoff_to,
+            page=page, size=size,
+        )
         if not pools:
             return PoolListResponse(items=[], total=0, page=page, size=size)
 

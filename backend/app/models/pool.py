@@ -15,9 +15,9 @@ class Pool(Base):
     name: Mapped[str] = mapped_column(String(300), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
 
-    # 담보 정보 (미공개 필드)
-    collateral_large: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    collateral_small: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # 담보 정보 (미공개 필드) — TEXT[] arrays for multiple selection
+    collateral_large: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text), nullable=True)
+    collateral_small: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text), nullable=True)
 
     # 거래 정보
     cutoff_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)

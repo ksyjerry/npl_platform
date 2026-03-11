@@ -14,8 +14,8 @@ class PoolCompanyInput(BaseModel):
 class PoolCreateSchema(BaseModel):
     name: str
     status: Optional[str] = "active"
-    collateral_large: Optional[str] = None
-    collateral_small: Optional[str] = None
+    collateral_large: Optional[list[str]] = None
+    collateral_small: Optional[list[str]] = None
     cutoff_date: Optional[date] = None
     bid_date: Optional[date] = None
     closing_date: Optional[date] = None
@@ -48,8 +48,8 @@ class PoolUpdateSchema(BaseModel):
 
     name: Optional[str] = None
     status: Optional[str] = None
-    collateral_large: Optional[str] = None
-    collateral_small: Optional[str] = None
+    collateral_large: Optional[list[str]] = None
+    collateral_small: Optional[list[str]] = None
     cutoff_date: Optional[date] = None
     bid_date: Optional[date] = None
     closing_date: Optional[date] = None
@@ -83,8 +83,8 @@ class PoolListItem(BaseModel):
     id: int
     name: str
     status: str
-    collateral_large: Optional[str] = None
-    collateral_small: Optional[str] = None
+    collateral_large: Optional[list[str]] = None
+    collateral_small: Optional[list[str]] = None
     cutoff_date: Optional[date] = None
     bid_date: Optional[date] = None
     closing_date: Optional[date] = None
@@ -119,8 +119,8 @@ class PoolDetailResponse(BaseModel):
     seller_companies: list[PoolCompanyItem] = []
     buyer_companies: list[PoolCompanyItem] = []
     # 담보
-    collateral_large: Optional[str] = None
-    collateral_small: Optional[str] = None
+    collateral_large: Optional[list[str]] = None
+    collateral_small: Optional[list[str]] = None
     # 채권
     debtor_type: Optional[list[str]] = None
     debtor_count: Optional[int] = None

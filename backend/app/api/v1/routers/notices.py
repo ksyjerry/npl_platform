@@ -40,14 +40,14 @@ async def create_notice(
     content: str = Form(...),
     category: str = Form("전체"),
     pool_id: Optional[int] = Form(None),
-    file: Optional[UploadFile] = File(None),
+    files: list[UploadFile] = File(default=[]),
     user: User = Depends(require_role("admin", "accountant")),
     db: AsyncSession = Depends(get_db),
     storage: FileStorageService = Depends(get_storage),
 ):
     from app.schemas.notice import NoticeCreate
     data = NoticeCreate(pool_id=pool_id, category=category, title=title, content=content)
-    return await NoticeService(db, storage).create(data, user, request, file)
+    return await NoticeService(db, storage).create(data, user, request, files)
 
 
 @router.patch("/{notice_id}", response_model=NoticeDetail)
@@ -71,3 +71,14 @@ async def delete_notice(
 ):
     await NoticeService(db).delete(notice_id, reason, user, request)
     return {"message": "삭제되었습니다."}
+
+
+@router.get("/{notice_id}/files/{file_id}/download")
+async def download_notice_file(
+    notice_id: int,
+    file_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    storage: FileStorageService = Depends(get_storage),
+):
+    return await NoticeService(db, storage).download_file(notice_id, file_id)

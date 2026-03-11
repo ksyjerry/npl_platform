@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.routers.admin import router as admin_router
 from app.api.v1.routers.auth import router as auth_router
+from app.api.v1.routers.bonds import router as bonds_router
 from app.api.v1.routers.consulting import router as consulting_router
 from app.api.v1.routers.documents import router as documents_router
 from app.api.v1.routers.glossary import router as glossary_router
@@ -50,6 +51,7 @@ app.include_router(glossary_router, prefix="/api/v1")
 app.include_router(consulting_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
+app.include_router(bonds_router, prefix="/api/v1")
 
 
 @app.get("/health")

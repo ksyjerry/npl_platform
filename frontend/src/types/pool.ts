@@ -2,8 +2,8 @@ export interface PoolListItem {
   id: number;
   name: string;
   status: "active" | "closed" | "cancelled";
-  collateral_large: string | null;
-  collateral_small: string | null;
+  collateral_large: string[] | null;
+  collateral_small: string[] | null;
   cutoff_date: string | null;
   bid_date: string | null;
   closing_date: string | null;
@@ -41,8 +41,8 @@ export interface PoolDetail {
   bidder_count: number | null;
   seller_companies: PoolCompanyItem[];
   buyer_companies: PoolCompanyItem[];
-  collateral_large: string | null;
-  collateral_small: string | null;
+  collateral_large: string[] | null;
+  collateral_small: string[] | null;
   debtor_type: string[] | null;
   debtor_count: number | null;
   bond_count: number | null;

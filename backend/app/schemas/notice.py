@@ -37,10 +37,18 @@ class NoticeResponse(BaseModel):
     created_at: Optional[datetime] = None
 
 
+class NoticeFileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    file_name: str
+    file_size: Optional[int] = None
+
+
 class NoticeDetail(NoticeResponse):
     content: Optional[str] = None
     attachment_doc_id: Optional[int] = None
     attachment_name: Optional[str] = None
+    files: list[NoticeFileResponse] = []
 
 
 class NoticeListResponse(BaseModel):

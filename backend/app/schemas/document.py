@@ -10,6 +10,7 @@ class DocumentItem(BaseModel):
     pool_id: int
     pool_name: Optional[str] = None
     role_type: str
+    uploader_id: Optional[int] = None
     company_name: Optional[str] = None
     uploader_name: Optional[str] = None
     file_name: str
@@ -44,3 +45,14 @@ class DocumentUpdateSchema(BaseModel):
         return v.strip()
 
     memo: Optional[str] = None
+
+
+class DocumentDeleteSchema(BaseModel):
+    reason: str
+
+    @field_validator("reason")
+    @classmethod
+    def reason_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("삭제 사유를 입력해주세요.")
+        return v.strip()

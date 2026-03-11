@@ -22,3 +22,4 @@ class Notice(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
     pool = relationship("Pool", back_populates="notices")
+    files = relationship("NoticeFile", back_populates="notice", cascade="all, delete-orphan")

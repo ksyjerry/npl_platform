@@ -7,10 +7,17 @@ export interface Notice {
   created_at: string;
 }
 
+export interface NoticeFileItem {
+  id: number;
+  file_name: string;
+  file_size: number | null;
+}
+
 export interface NoticeDetail extends Notice {
   content: string;
   attachment_doc_id: number | null;
   attachment_name: string | null;
+  files: NoticeFileItem[];
 }
 
 export interface NoticeCreateInput {

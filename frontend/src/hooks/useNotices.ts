@@ -37,19 +37,21 @@ export function useNoticeDetail(noticeId: number) {
   const [notice, setNotice] = useState<NoticeDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const { data } = await api.get<NoticeDetail>(`/notices/${noticeId}`);
-        setNotice(data);
-      } catch {
-        setNotice(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const fetchNotice = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get<NoticeDetail>(`/notices/${noticeId}`);
+      setNotice(data);
+    } catch {
+      setNotice(null);
+    } finally {
+      setLoading(false);
+    }
   }, [noticeId]);
 
-  return { notice, loading };
+  useEffect(() => {
+    fetchNotice();
+  }, [fetchNotice]);
+
+  return { notice, loading, refetch: fetchNotice };
 }

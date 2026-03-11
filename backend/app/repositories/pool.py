@@ -24,6 +24,10 @@ class PoolRepository:
     async def get_all(
         self,
         status: str | None = None,
+        name: str | None = None,
+        seller_name: str | None = None,
+        cutoff_from=None,
+        cutoff_to=None,
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[Pool], int]:
@@ -33,6 +37,32 @@ class PoolRepository:
         if status:
             query = query.where(Pool.status == status)
             count_query = count_query.where(Pool.status == status)
+
+        if name:
+            query = query.where(Pool.name.ilike(f"%{name}%"))
+            count_query = count_query.where(Pool.name.ilike(f"%{name}%"))
+
+        if seller_name:
+            seller_pool_ids = (
+                select(PoolCompany.pool_id)
+                .join(Company, PoolCompany.company_id == Company.id)
+                .where(
+                    and_(
+                        PoolCompany.role == "seller",
+                        Company.name.ilike(f"%{seller_name}%"),
+                    )
+                )
+            )
+            query = query.where(Pool.id.in_(seller_pool_ids))
+            count_query = count_query.where(Pool.id.in_(seller_pool_ids))
+
+        if cutoff_from:
+            query = query.where(Pool.cutoff_date >= cutoff_from)
+            count_query = count_query.where(Pool.cutoff_date >= cutoff_from)
+
+        if cutoff_to:
+            query = query.where(Pool.cutoff_date <= cutoff_to)
+            count_query = count_query.where(Pool.cutoff_date <= cutoff_to)
 
         # Sort: active(0) -> closed(1) -> cancelled(2), then by created_at DESC
         status_order = case(

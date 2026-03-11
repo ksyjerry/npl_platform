@@ -3,13 +3,14 @@ import string
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, Request
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.core.security import hash_password
 from app.models.company import Company
 from app.models.consulting import Consulting
+from app.models.pool_participant import PoolParticipant
 from app.models.user import User
 from app.repositories.audit_log import AuditLogRepository
 from app.schemas.admin import (
@@ -179,7 +180,7 @@ class AdminService:
     ) -> ConsultingAdminListResponse:
         query = select(Consulting, User.name.label("user_name"), Company.name.label("company_name")).join(
             User, Consulting.user_id == User.id
-        ).join(
+        ).outerjoin(
             Company, User.company_id == Company.id
         )
         count_query = select(func.count(Consulting.id))
@@ -278,7 +279,7 @@ class AdminService:
                 Company.name.label("company_name"),
             )
             .join(User, Consulting.user_id == User.id)
-            .join(Company, User.company_id == Company.id)
+            .outerjoin(Company, User.company_id == Company.id)
             .where(Consulting.id == consulting_id)
         )
         row = detail_result.one()
@@ -449,4 +450,90 @@ class AdminService:
         )
 
         await self.db.delete(company)
+        await self.db.commit()
+
+    # ── Pool Participants ──
+
+    async def get_pool_participants(self, pool_id: int) -> list[dict]:
+        result = await self.db.execute(
+            select(PoolParticipant, Company.name.label("company_name"))
+            .outerjoin(Company, PoolParticipant.company_id == Company.id)
+            .where(PoolParticipant.pool_id == pool_id)
+        )
+        rows = result.fetchall()
+        return [
+            {
+                "pool_id": pp.pool_id,
+                "company_id": pp.company_id,
+                "company_name": cname or "",
+            }
+            for pp, cname in rows
+        ]
+
+    async def add_pool_participant(
+        self, pool_id: int, company_id: int, admin: User, request: Request
+    ) -> dict:
+        # Check if already exists
+        existing = await self.db.execute(
+            select(PoolParticipant).where(
+                and_(
+                    PoolParticipant.pool_id == pool_id,
+                    PoolParticipant.company_id == company_id,
+                )
+            )
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(409, "이미 참여 등록된 업체입니다.")
+
+        pp = PoolParticipant(pool_id=pool_id, company_id=company_id)
+        self.db.add(pp)
+
+        await self.audit_repo.create(
+            table_name="pool_participants",
+            record_id=pool_id,
+            action="CREATE",
+            performed_by=admin.id,
+            ip_address=request.client.host if request.client else "unknown",
+            reason="Pool 참여자 추가",
+            old_data=None,
+            new_data={"pool_id": pool_id, "company_id": company_id},
+        )
+
+        await self.db.commit()
+
+        # Get company name
+        c_result = await self.db.execute(
+            select(Company.name).where(Company.id == company_id)
+        )
+        cname = c_result.scalar_one_or_none() or ""
+
+        return {"pool_id": pool_id, "company_id": company_id, "company_name": cname}
+
+    async def remove_pool_participant(
+        self, pool_id: int, company_id: int, admin: User, request: Request
+    ) -> None:
+        result = await self.db.execute(
+            select(PoolParticipant).where(
+                and_(
+                    PoolParticipant.pool_id == pool_id,
+                    PoolParticipant.company_id == company_id,
+                )
+            )
+        )
+        pp = result.scalar_one_or_none()
+        if not pp:
+            raise HTTPException(404, "참여 등록된 업체가 아닙니다.")
+
+        await self.audit_repo.create(
+            table_name="pool_participants",
+            record_id=pool_id,
+            action="DELETE",
+            performed_by=admin.id,
+            ip_address=request.client.host if request.client else "unknown",
+            reason="Pool 참여자 제거",
+            old_data={"pool_id": pool_id, "company_id": company_id},
+            new_data=None,
+        )
+
+        await self.db.delete(pp)
         await self.db.commit()

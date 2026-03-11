@@ -1,18 +1,23 @@
 from datetime import datetime
+from urllib.parse import quote
+from uuid import uuid4
 
 from fastapi import HTTPException, Request, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import encrypt_path
+from app.core.crypto import decrypt_path, encrypt_path
 from app.core.file_validator import validate_upload
 from app.models.audit_log import AuditLog
 from app.models.notice import Notice
+from app.models.notice_file import NoticeFile
 from app.models.user import User
 from app.repositories.notice import NoticeRepository
 from app.schemas.notice import (
     NoticeCreate,
     NoticeDetail,
+    NoticeFileResponse,
     NoticeListResponse,
     NoticeResponse,
     NoticeUpdate,
@@ -45,14 +50,29 @@ class NoticeService:
         )
         creator_name = result.scalar_one_or_none()
 
+        # Get attached files (notice_files table)
+        files_result = await self.db.execute(
+            select(NoticeFile)
+            .where(NoticeFile.notice_id == notice_id)
+            .order_by(NoticeFile.sort_order)
+        )
+        notice_files = [
+            NoticeFileResponse(id=f.id, file_name=f.file_name, file_size=f.file_size)
+            for f in files_result.scalars().all()
+        ]
+
+        # Backward compat: check legacy single-file fields
+        has_attachment = notice.file_name is not None or len(notice_files) > 0
+
         return NoticeDetail(
             id=notice.id,
             pool_id=notice.pool_id,
             category=notice.category,
             title=notice.title,
             content=notice.content,
-            has_attachment=notice.file_name is not None,
+            has_attachment=has_attachment,
             attachment_name=notice.file_name,
+            files=notice_files,
             created_by_name=creator_name,
             created_at=notice.created_at,
         )
@@ -62,19 +82,11 @@ class NoticeService:
         data: NoticeCreate,
         user: User,
         request: Request,
-        file: UploadFile | None = None,
+        files: list[UploadFile] | None = None,
     ) -> NoticeResponse:
+        # Legacy single-file support: keep first file in notice table for backward compat
         file_name = None
         file_path_enc = None
-
-        if file and file.filename and self.storage:
-            content = await file.read()
-            validate_upload(file.filename, content)
-            from uuid import uuid4
-            path = f"notices/{uuid4()}_{file.filename}"
-            await self.storage.save(path, content)
-            file_name = file.filename
-            file_path_enc = encrypt_path(path)
 
         notice = Notice(
             pool_id=data.pool_id,
@@ -86,6 +98,33 @@ class NoticeService:
             created_by=user.id,
         )
         notice = await self.repo.create(notice)
+        await self.db.flush()
+
+        # Save multiple files to notice_files table
+        has_files = False
+        if files and self.storage:
+            for idx, file in enumerate(files):
+                if not file.filename:
+                    continue
+                content = await file.read()
+                validate_upload(file.filename, content)
+                path = f"notices/{uuid4()}_{file.filename}"
+                await self.storage.save(path, content)
+
+                nf = NoticeFile(
+                    notice_id=notice.id,
+                    file_name=file.filename,
+                    file_path_enc=encrypt_path(path),
+                    file_size=len(content),
+                    sort_order=idx,
+                )
+                self.db.add(nf)
+                has_files = True
+
+                # Keep first file in legacy fields for backward compat
+                if idx == 0:
+                    notice.file_name = file.filename
+                    notice.file_path_enc = encrypt_path(path)
 
         # Audit log
         audit = AuditLog(
@@ -104,7 +143,7 @@ class NoticeService:
             pool_id=notice.pool_id,
             category=notice.category,
             title=notice.title,
-            has_attachment=file_name is not None,
+            has_attachment=has_files,
             created_at=notice.created_at,
         )
 
@@ -165,3 +204,30 @@ class NoticeService:
         self.db.add(audit)
         await self.db.delete(notice)
         await self.db.commit()
+
+    async def download_file(
+        self, notice_id: int, file_id: int
+    ) -> StreamingResponse:
+        if not self.storage:
+            raise HTTPException(500, "파일 스토리지가 설정되지 않았습니다.")
+
+        result = await self.db.execute(
+            select(NoticeFile).where(
+                NoticeFile.id == file_id,
+                NoticeFile.notice_id == notice_id,
+            )
+        )
+        nf = result.scalar_one_or_none()
+        if not nf:
+            raise HTTPException(404, "파일을 찾을 수 없습니다.")
+
+        path = decrypt_path(nf.file_path_enc)
+        stream = await self.storage.read_stream(path)
+
+        return StreamingResponse(
+            stream,
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{quote(nf.file_name)}"
+            },
+        )

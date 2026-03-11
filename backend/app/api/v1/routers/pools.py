@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
@@ -20,12 +21,20 @@ router = APIRouter(prefix="/pools", tags=["pools"])
 @router.get("", response_model=PoolListResponse)
 async def list_pools(
     status: Optional[str] = None,
+    name: Optional[str] = None,
+    seller_name: Optional[str] = None,
+    cutoff_from: Optional[date] = None,
+    cutoff_to: Optional[date] = None,
     page: int = 1,
     size: int = 20,
     user: User = Depends(require_role("admin", "accountant", "seller", "buyer")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await PoolService(db).get_list(user, status=status, page=page, size=size)
+    return await PoolService(db).get_list(
+        user, status=status, name=name, seller_name=seller_name,
+        cutoff_from=cutoff_from, cutoff_to=cutoff_to,
+        page=page, size=size,
+    )
 
 
 @router.post("", response_model=PoolDetailResponse, status_code=201)

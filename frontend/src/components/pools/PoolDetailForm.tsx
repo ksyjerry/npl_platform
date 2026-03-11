@@ -93,8 +93,8 @@ interface EditForm {
   closing_date: string;
   sale_method: string;
   bidder_count: string;
-  collateral_large: string;
-  collateral_small: string;
+  collateral_large: string[];
+  collateral_small: string[];
   debtor_count: string;
   bond_count: string;
   avg_overdue_months: string;
@@ -116,8 +116,8 @@ function poolToEditForm(pool: PoolDetail): EditForm {
     closing_date: pool.closing_date || "",
     sale_method: pool.sale_method || "",
     bidder_count: pool.bidder_count != null ? String(pool.bidder_count) : "",
-    collateral_large: pool.collateral_large || "",
-    collateral_small: pool.collateral_small || "",
+    collateral_large: pool.collateral_large || [],
+    collateral_small: pool.collateral_small || [],
     debtor_count: pool.debtor_count != null ? String(pool.debtor_count) : "",
     bond_count: pool.bond_count != null ? String(pool.bond_count) : "",
     avg_overdue_months: pool.avg_overdue_months != null ? String(pool.avg_overdue_months) : "",
@@ -199,7 +199,7 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
   const sellerCompanyOptions = companies.filter((c) => c.type === "seller");
   const buyerCompanyOptions = companies.filter((c) => c.type === "buyer");
 
-  const update = (field: keyof EditForm, value: string) => {
+  const update = (field: keyof EditForm, value: string | string[]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -236,8 +236,10 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
       if (form.sale_method !== (pool.sale_method || "")) payload.sale_method = form.sale_method || null;
       if (form.bidder_count !== (pool.bidder_count != null ? String(pool.bidder_count) : ""))
         payload.bidder_count = form.bidder_count ? parseInt(form.bidder_count) : null;
-      if (form.collateral_large !== (pool.collateral_large || "")) payload.collateral_large = form.collateral_large || null;
-      if (form.collateral_small !== (pool.collateral_small || "")) payload.collateral_small = form.collateral_small || null;
+      if (JSON.stringify(form.collateral_large) !== JSON.stringify(pool.collateral_large || []))
+        payload.collateral_large = form.collateral_large.length > 0 ? form.collateral_large : null;
+      if (JSON.stringify(form.collateral_small) !== JSON.stringify(pool.collateral_small || []))
+        payload.collateral_small = form.collateral_small.length > 0 ? form.collateral_small : null;
       if (form.debtor_count !== (pool.debtor_count != null ? String(pool.debtor_count) : ""))
         payload.debtor_count = form.debtor_count ? parseInt(form.debtor_count) : null;
       if (form.bond_count !== (pool.bond_count != null ? String(pool.bond_count) : ""))
@@ -326,8 +328,8 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         <div>
           <SectionHeading title="담보 정보" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FieldRow label="담보유형(대)" value={masked(pool.collateral_large)} italic />
-            <FieldRow label="담보유형(소)" value={masked(pool.collateral_small)} italic />
+            <FieldRow label="담보유형(대)" value={pool.collateral_large ? pool.collateral_large.join(", ") : "—"} italic />
+            <FieldRow label="담보유형(소)" value={pool.collateral_small ? pool.collateral_small.join(", ") : "—"} italic />
           </div>
         </div>
 
@@ -539,21 +541,49 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         </div>
       </div>
 
-      {/* 담보 정보 */}
+      {/* 담보 정보 (CR-12: checkbox) */}
       <div>
         <SectionHeading title="담보 정보" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
           <EditFieldRow label="담보유형(대)">
-            <EditSelect value={form.collateral_large} onChange={(v) => update("collateral_large", v)} options={[
-              { value: "", label: "선택" },
-              ...COLLATERAL_LARGE.map((c) => ({ value: c, label: c })),
-            ]} />
+            <div className="flex gap-4 flex-wrap">
+              {COLLATERAL_LARGE.map((c) => (
+                <label key={c} className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: "#2D2D2D" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.collateral_large.includes(c)}
+                    onChange={(e) => {
+                      const next = e.target.checked
+                        ? [...form.collateral_large, c]
+                        : form.collateral_large.filter((v) => v !== c);
+                      setForm((prev) => ({ ...prev, collateral_large: next }));
+                    }}
+                    style={{ accentColor: "#D04A02" }}
+                  />
+                  {c}
+                </label>
+              ))}
+            </div>
           </EditFieldRow>
           <EditFieldRow label="담보유형(소)">
-            <EditSelect value={form.collateral_small} onChange={(v) => update("collateral_small", v)} options={[
-              { value: "", label: "선택" },
-              ...COLLATERAL_SMALL.map((c) => ({ value: c, label: c })),
-            ]} />
+            <div className="flex gap-4 flex-wrap">
+              {COLLATERAL_SMALL.map((c) => (
+                <label key={c} className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: "#2D2D2D" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.collateral_small.includes(c)}
+                    onChange={(e) => {
+                      const next = e.target.checked
+                        ? [...form.collateral_small, c]
+                        : form.collateral_small.filter((v) => v !== c);
+                      setForm((prev) => ({ ...prev, collateral_small: next }));
+                    }}
+                    style={{ accentColor: "#D04A02" }}
+                  />
+                  {c}
+                </label>
+              ))}
+            </div>
           </EditFieldRow>
         </div>
       </div>

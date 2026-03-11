@@ -13,7 +13,7 @@ export default function NoticeDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const noticeId = Number(id);
-  const { notice, loading } = useNoticeDetail(noticeId);
+  const { notice, loading, refetch } = useNoticeDetail(noticeId);
   const [role, setRole] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -36,6 +36,23 @@ export default function NoticeDetailPage() {
       setTimeout(() => setToast(null), 3000);
     }
     setShowDeleteModal(false);
+  };
+
+  const handleFileDownload = async (nId: number, fileId: number, fileName: string) => {
+    try {
+      const res = await api.get(`/notices/${nId}/files/${fileId}/download`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setToast({ type: "error", message: "파일 다운로드에 실패했습니다." });
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   const handleDownload = async (docId: number, fileName: string) => {
@@ -124,8 +141,34 @@ export default function NoticeDetailPage() {
             {notice.content}
           </div>
 
-          {/* Attachment */}
-          {notice.attachment_doc_id && notice.attachment_name && (
+          {/* Attachments — multiple files */}
+          {notice.files && notice.files.length > 0 && (
+            <div className="mt-8 pt-6 space-y-2" style={{ borderTop: "1px solid #DEDEDE" }}>
+              <p className="text-sm font-semibold" style={{ color: "#2D2D2D" }}>첨부파일</p>
+              {notice.files.map((file) => (
+                <button
+                  key={file.id}
+                  onClick={() => handleFileDownload(noticeId, file.id, file.file_name)}
+                  className="flex items-center gap-2 text-sm hover:underline"
+                  style={{ color: "#D04A02" }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                  </svg>
+                  {file.file_name}
+                  {file.file_size != null && (
+                    <span style={{ color: "#7D7D7D" }}>
+                      ({file.file_size < 1024 * 1024
+                        ? `${(file.file_size / 1024).toFixed(1)}KB`
+                        : `${(file.file_size / (1024 * 1024)).toFixed(1)}MB`})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Legacy single attachment fallback */}
+          {(!notice.files || notice.files.length === 0) && notice.attachment_doc_id && notice.attachment_name && (
             <div className="mt-8 pt-6" style={{ borderTop: "1px solid #DEDEDE" }}>
               <button
                 onClick={() => handleDownload(notice.attachment_doc_id!, notice.attachment_name!)}
@@ -149,6 +192,18 @@ export default function NoticeDetailPage() {
             >
               목록으로
             </Link>
+            {can(role, "notice:edit") && (
+              <>
+                <span style={{ color: "#DEDEDE" }}>|</span>
+                <Link
+                  href={`/notices/${noticeId}/edit`}
+                  className="text-sm font-semibold hover:underline"
+                  style={{ color: "#D04A02" }}
+                >
+                  수정
+                </Link>
+              </>
+            )}
             {can(role, "notice:delete") && (
               <>
                 <span style={{ color: "#DEDEDE" }}>|</span>

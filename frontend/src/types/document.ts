@@ -3,6 +3,7 @@ export interface DocumentItem {
   pool_id: number;
   pool_name: string | null;
   role_type: "seller" | "buyer" | "accountant";
+  uploader_id: number | null;
   company_name: string | null;
   uploader_name: string | null;
   file_name: string;

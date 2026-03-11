@@ -5,12 +5,10 @@ import Link from "next/link";
 import { useNotices } from "@/hooks/useNotices";
 import { can } from "@/lib/rbac";
 import { getAccessToken, parseTokenPayload } from "@/lib/auth";
-import NoticeCreateModal from "@/components/notices/NoticeCreateModal";
 
 export default function NoticesPage() {
-  const { items, total, page, setPage, loading, refetch } = useNotices();
+  const { items, total, page, setPage, loading } = useNotices();
   const [role, setRole] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
   const totalPages = Math.ceil(total / 20);
 
   useEffect(() => {
@@ -39,8 +37,8 @@ export default function NoticesPage() {
           </p>
         </div>
         {can(role, "notice:create") && (
-          <button
-            onClick={() => setShowCreate(true)}
+          <Link
+            href="/notices/create"
             className="text-sm font-semibold text-white"
             style={{
               backgroundColor: "#D04A02",
@@ -49,7 +47,7 @@ export default function NoticesPage() {
             }}
           >
             + 공지 등록
-          </button>
+          </Link>
         )}
       </div>
 
@@ -163,15 +161,6 @@ export default function NoticesPage() {
         )}
       </div>
 
-      {showCreate && (
-        <NoticeCreateModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => {
-            setShowCreate(false);
-            refetch();
-          }}
-        />
-      )}
     </div>
   );
 }

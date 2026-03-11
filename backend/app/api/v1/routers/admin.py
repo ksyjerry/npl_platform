@@ -113,7 +113,7 @@ async def list_consulting(
     status: Optional[str] = None,
     page: int = 1,
     size: int = 20,
-    admin: User = Depends(require_role("admin")),
+    admin: User = Depends(require_role("admin", "accountant")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).get_consultings(
@@ -128,7 +128,45 @@ async def reply_consulting(
     consulting_id: int,
     data: ConsultingReplySchema,
     request: Request,
-    admin: User = Depends(require_role("admin")),
+    admin: User = Depends(require_role("admin", "accountant")),
     db: AsyncSession = Depends(get_db),
 ):
     return await AdminService(db).reply_consulting(consulting_id, data, admin, request)
+
+
+# ── Pool Participants (CR-10) ──
+
+
+@router.get("/pools/{pool_id}/participants")
+async def list_pool_participants(
+    pool_id: int,
+    admin: User = Depends(require_role("admin", "accountant")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await AdminService(db).get_pool_participants(pool_id)
+
+
+@router.post("/pools/{pool_id}/participants", status_code=201)
+async def add_pool_participant(
+    pool_id: int,
+    data: dict,
+    request: Request,
+    admin: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    company_id = data.get("company_id")
+    if not company_id:
+        from fastapi import HTTPException
+        raise HTTPException(422, "company_id가 필요합니다.")
+    return await AdminService(db).add_pool_participant(pool_id, company_id, admin, request)
+
+
+@router.delete("/pools/{pool_id}/participants/{company_id}", status_code=204)
+async def remove_pool_participant(
+    pool_id: int,
+    company_id: int,
+    request: Request,
+    admin: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    await AdminService(db).remove_pool_participant(pool_id, company_id, admin, request)

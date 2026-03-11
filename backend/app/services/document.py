@@ -12,6 +12,7 @@ from app.models.document import Document
 from app.models.user import User
 from app.repositories.document import DocumentRepository
 from app.schemas.document import (
+    DocumentDeleteSchema,
     DocumentItem,
     DocumentListResponse,
     DocumentUpdateSchema,
@@ -172,8 +173,47 @@ class DocumentService:
             id=doc.id,
             pool_id=doc.pool_id,
             role_type=doc.role_type,
+            uploader_id=doc.uploader_id,
             file_name=doc.file_name,
             file_size=doc.file_size,
             memo=doc.memo,
             created_at=doc.created_at,
         )
+
+    async def delete(
+        self,
+        doc_id: int,
+        data: DocumentDeleteSchema,
+        user: User,
+        request: Request,
+    ) -> None:
+        doc = await self.repo.get_or_404(doc_id)
+
+        # Only uploader or admin/accountant can delete
+        if doc.uploader_id != user.id and user.role not in ("admin", "accountant"):
+            raise HTTPException(403, "삭제 권한이 없습니다.")
+
+        # Try to delete file from storage
+        try:
+            path = decrypt_path(doc.file_path_enc)
+            await self.storage.delete(path)
+        except Exception:
+            pass  # File might already be gone
+
+        # Audit log
+        audit = AuditLog(
+            table_name="documents",
+            record_id=doc.id,
+            action="DELETE",
+            reason=data.reason,
+            old_data={
+                "file_name": doc.file_name,
+                "role_type": doc.role_type,
+                "pool_id": doc.pool_id,
+            },
+            performed_by=user.id,
+            ip_address=request.client.host if request.client else "unknown",
+        )
+        self.db.add(audit)
+        await self.db.delete(doc)
+        await self.db.commit()

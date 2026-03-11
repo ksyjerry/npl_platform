@@ -523,7 +523,7 @@ function ConsultingPageContent() {
 
 export default function AdminConsultingPage() {
   return (
-    <RoleGuard permission="admin:access">
+    <RoleGuard permission="consulting:reply">
       <div className="min-h-screen" style={{ backgroundColor: "#FFFFFF" }}>
         <AdminNav />
         <ConsultingPageContent />

@@ -72,6 +72,7 @@ class DocumentRepository:
                 "file_name": doc.file_name,
                 "file_size": doc.file_size,
                 "memo": doc.memo,
+                "uploader_id": doc.uploader_id,
                 "created_at": doc.created_at,
             })
 

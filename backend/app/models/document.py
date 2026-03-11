@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import BigInteger, ForeignKey, String, Text
+from sqlalchemy import BigInteger, Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,6 +18,7 @@ class Document(Base):
     file_path_enc: Mapped[str] = mapped_column(Text, nullable=False)  # AES-256 encrypted
     file_size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     memo: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_pool_visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
