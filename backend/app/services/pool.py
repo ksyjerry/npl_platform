@@ -30,6 +30,24 @@ class PoolService:
         self.db = db
         self.repo = PoolRepository(db)
 
+    @staticmethod
+    def _jsonable_dict(pool) -> dict:
+        """Convert Pool model to JSON-safe dict for audit logging."""
+        result = {}
+        for c in Pool.__table__.columns:
+            if c.key == "sale_ratio":
+                continue
+            v = getattr(pool, c.key)
+            if v is None:
+                result[c.key] = None
+            elif hasattr(v, "isoformat"):
+                result[c.key] = v.isoformat()
+            elif isinstance(v, Decimal):
+                result[c.key] = float(v)
+            else:
+                result[c.key] = v
+        return result
+
     async def get_list(
         self,
         user: User,
@@ -248,15 +266,7 @@ class PoolService:
         pool = await self.repo.get_or_404(pool_id)
 
         # Build old data for audit
-        old_data = {
-            c.key: getattr(pool, c.key)
-            for c in Pool.__table__.columns
-            if c.key != "sale_ratio"
-        }
-        # Serialize dates/datetimes to string for JSON
-        for k, v in old_data.items():
-            if hasattr(v, "isoformat"):
-                old_data[k] = v.isoformat()
+        old_data = self._jsonable_dict(pool)
 
         # Apply updates (exclude company fields from pool column updates)
         update_data = data.model_dump(
@@ -297,14 +307,7 @@ class PoolService:
                 ))
 
         # Build new data for audit
-        new_data = {
-            c.key: getattr(pool, c.key)
-            for c in Pool.__table__.columns
-            if c.key != "sale_ratio"
-        }
-        for k, v in new_data.items():
-            if hasattr(v, "isoformat"):
-                new_data[k] = v.isoformat()
+        new_data = self._jsonable_dict(pool)
 
         # Create audit log
         audit = AuditLog(
