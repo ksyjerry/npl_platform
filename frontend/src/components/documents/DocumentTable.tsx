@@ -121,7 +121,7 @@ export default function DocumentTable({ items, startIndex, currentUserId, curren
                 <td className="px-4 py-3">
                   <button
                     onClick={() => handleDownload(item.id, item.file_name)}
-                    className="text-sm font-medium hover:underline"
+                    className="text-sm font-medium hover:underline cursor-pointer"
                     style={{ color: "#D04A02" }}
                   >
                     💾

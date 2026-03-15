@@ -42,12 +42,13 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "거래정보",
-    activePaths: ["/notices", "/pools", "/documents"],
+    activePaths: ["/notices", "/pools", "/documents", "/bonds"],
     authOnly: true,
     children: [
       { href: "/notices", label: "공지사항" },
       { href: "/pools", label: "거래현황" },
       { href: "/documents", label: "자료등록" },
+      { href: "/bonds", label: "채권관리" },
     ],
   },
   {
@@ -149,7 +150,7 @@ export default function Navbar() {
             alt="PwC"
             width={64}
             height={32}
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain", width: "auto", height: "auto" }}
             priority
           />
           <span className="text-lg font-bold" style={{ color: "#2D2D2D" }}>
@@ -191,7 +192,7 @@ export default function Navbar() {
               <div key={item.label} className="relative">
                 <button
                   onClick={() => toggleDropdown(item.label)}
-                  className="text-sm transition-colors flex items-center gap-1"
+                  className="text-sm transition-colors flex items-center gap-1 cursor-pointer"
                   style={{
                     color: active ? "#D04A02" : "#464646",
                     fontWeight: active ? 600 : 400,
@@ -223,7 +224,7 @@ export default function Navbar() {
                       <Link
                         key={child.href}
                         href={child.href}
-                        className="block px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                        className="block px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 cursor-pointer"
                         style={{
                           color: isPathActive(child.href) ? "#D04A02" : "#464646",
                           fontWeight: isPathActive(child.href) ? 600 : 400,
@@ -266,7 +267,7 @@ export default function Navbar() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen((prev) => !prev)}
-                  className="text-sm font-medium flex items-center gap-1"
+                  className="text-sm font-medium flex items-center gap-1 cursor-pointer"
                   style={{ color: "#2D2D2D" }}
                 >
                   {user.name ? `${user.name}님` : "사용자님"}
@@ -293,7 +294,7 @@ export default function Navbar() {
                   >
                     <Link
                       href="/mypage"
-                      className="block px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                      className="block px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 cursor-pointer"
                       style={{ color: "#464646" }}
                       onClick={() => setUserMenuOpen(false)}
                     >
@@ -301,7 +302,7 @@ export default function Navbar() {
                     </Link>
                     <button
                       onClick={() => { setUserMenuOpen(false); handleLogout(); }}
-                      className="block w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50"
+                      className="block w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 cursor-pointer"
                       style={{ color: "#7D7D7D" }}
                     >
                       로그아웃

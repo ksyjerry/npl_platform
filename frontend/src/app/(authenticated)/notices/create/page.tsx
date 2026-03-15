@@ -13,7 +13,6 @@ interface PoolOption {
 
 function NoticeCreateContent() {
   const router = useRouter();
-  const [category, setCategory] = useState("");
   const [poolId, setPoolId] = useState<string>("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -28,9 +27,26 @@ function NoticeCreateContent() {
       .catch(() => {});
   }, []);
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
+  const MAX_TOTAL_SIZE = 200 * 1024 * 1024; // 200MB total
+
   const handleFileAdd = (newFiles: FileList | null) => {
     if (!newFiles) return;
-    setFiles((prev) => [...prev, ...Array.from(newFiles)]);
+    const incoming = Array.from(newFiles);
+    const currentTotal = files.reduce((sum, f) => sum + f.size, 0);
+    const oversized = incoming.filter((f) => f.size > MAX_FILE_SIZE);
+    if (oversized.length > 0) {
+      setToast({ type: "error", message: `파일당 최대 50MB까지 업로드 가능합니다. (${oversized.map((f) => f.name).join(", ")})` });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+    const newTotal = currentTotal + incoming.reduce((sum, f) => sum + f.size, 0);
+    if (newTotal > MAX_TOTAL_SIZE) {
+      setToast({ type: "error", message: "전체 첨부파일 합계는 200MB를 초과할 수 없습니다." });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+    setFiles((prev) => [...prev, ...incoming]);
   };
 
   const handleFileRemove = (idx: number) => {
@@ -44,7 +60,8 @@ function NoticeCreateContent() {
     setSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append("category", category || "전체");
+      const selectedPool = pools.find((p) => String(p.id) === poolId);
+      formData.append("category", selectedPool ? selectedPool.name : "전체");
       formData.append("title", title);
       formData.append("content", content);
       if (poolId) formData.append("pool_id", poolId);
@@ -82,25 +99,10 @@ function NoticeCreateContent() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-8 py-8">
         <div className="space-y-5">
-          {/* Category */}
+          {/* 구분 (Pool 선택 통합) */}
           <div>
             <label className="block text-sm font-semibold mb-1.5" style={{ color: "#2D2D2D" }}>
               구분
-            </label>
-            <input
-              type="text"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full border text-sm outline-none"
-              style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "10px 14px", color: "#2D2D2D" }}
-              placeholder="예: PwC-SB 2026-1 Program 또는 전체"
-            />
-          </div>
-
-          {/* Pool 선택 */}
-          <div>
-            <label className="block text-sm font-semibold mb-1.5" style={{ color: "#2D2D2D" }}>
-              Pool명
             </label>
             <select
               value={poolId}
@@ -108,7 +110,7 @@ function NoticeCreateContent() {
               className="w-full border text-sm outline-none"
               style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "10px 14px", color: "#2D2D2D" }}
             >
-              <option value="">전체 공지 (특정 Pool 미지정)</option>
+              <option value="">전체 공지</option>
               {pools.map((p) => (
                 <option key={p.id} value={String(p.id)}>{p.name}</option>
               ))}
@@ -166,9 +168,7 @@ function NoticeCreateContent() {
                   className="hidden"
                 />
               </label>
-              {files.length === 0 && (
-                <span className="text-sm" style={{ color: "#7D7D7D" }}>선택된 파일 없음</span>
-              )}
+              <span className="text-xs" style={{ color: "#7D7D7D" }}>파일당 50MB, 전체 200MB 이내</span>
             </div>
             {files.length > 0 && (
               <div className="space-y-1.5 mt-2">
@@ -187,7 +187,7 @@ function NoticeCreateContent() {
                     <button
                       type="button"
                       onClick={() => handleFileRemove(idx)}
-                      className="text-xs font-medium hover:underline"
+                      className="text-xs font-medium hover:underline cursor-pointer"
                       style={{ color: "#E0301E" }}
                     >
                       제거

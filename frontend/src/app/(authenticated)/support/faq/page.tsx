@@ -53,7 +53,7 @@ export default function FaqPage() {
             >
               <button
                 onClick={() => setOpenIndex(isOpen ? null : i)}
-                className="w-full text-left px-4 py-4 flex items-center justify-between"
+                className="w-full text-left px-4 py-4 flex items-center justify-between cursor-pointer"
               >
                 <span
                   className="text-base font-semibold"

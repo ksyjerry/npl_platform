@@ -8,6 +8,7 @@ class BondResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     pool_id: int
+    bond_type: Optional[str] = None
     bond_no: Optional[str] = None
     debtor_type: Optional[str] = None
     debtor_id_masked: Optional[str] = None
@@ -22,6 +23,7 @@ class BondResponse(BaseModel):
     overdue_start_date: Optional[date] = None
     overdue_months: Optional[int] = None
     legal_status: Optional[str] = None
+    transfer_count: Optional[int] = None
     import_batch: Optional[str] = None
     created_at: Optional[datetime] = None
 
@@ -63,6 +65,10 @@ class BondDeleteSchema(BaseModel):
         return v.strip()
 
 
+class BondDetailResponse(BondResponse):
+    extra_data: Optional[dict] = None
+
+
 class BondListResponse(BaseModel):
     items: list[BondResponse]
     total: int
@@ -88,6 +94,7 @@ class BondSummaryCategory(BaseModel):
 class BondSummary(BaseModel):
     pool_id: int
     total_bond_count: int
+    total_debtor_count: int = 0
     total_opb: int
     total_balance: int
     by_debtor_type: list[BondSummaryCategory] = []
@@ -95,3 +102,23 @@ class BondSummary(BaseModel):
     by_collateral_type: list[BondSummaryCategory] = []
     by_legal_status: list[BondSummaryCategory] = []
     by_overdue_range: list[BondSummaryCategory] = []
+    matrix: list["BondMatrixSection"] = []
+
+
+class BondMatrixCell(BaseModel):
+    debtor_count: int = 0
+    bond_count: int = 0
+    opb: int = 0
+
+
+class BondMatrixRow(BaseModel):
+    creditor: str
+    by_debtor_type: dict[str, BondMatrixCell] = {}
+    total: BondMatrixCell = BondMatrixCell()
+
+
+class BondMatrixSection(BaseModel):
+    bond_type: str  # A, B1, B2, C
+    bond_type_label: str  # 일반무담보채권, CCRS, IRL, 담보채권
+    rows: list[BondMatrixRow] = []
+    total: BondMatrixRow = BondMatrixRow(creditor="합계")

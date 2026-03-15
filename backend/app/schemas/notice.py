@@ -26,6 +26,17 @@ class NoticeUpdate(BaseModel):
     content: Optional[str] = None
 
 
+class NoticeDelete(BaseModel):
+    reason: str
+
+    @field_validator("reason")
+    @classmethod
+    def reason_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("삭제 사유를 입력해주세요.")
+        return v.strip()
+
+
 class NoticeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

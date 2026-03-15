@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import api from "@/lib/api";
 import RoleGuard from "@/components/auth/RoleGuard";
-import AdminNav from "@/components/admin/AdminNav";
 import ReasonModal from "@/components/ui/ReasonModal";
 import BondDetailModal from "@/components/bonds/BondDetailModal";
 
@@ -38,11 +37,14 @@ interface ImportResult {
 }
 
 const BOND_TYPES = [
+  { value: "", label: "전체" },
   { value: "A", label: "A. 일반무담보" },
   { value: "B1", label: "B1. CCRS" },
   { value: "B2", label: "B2. IRL" },
   { value: "C", label: "C. 담보" },
 ];
+
+const BOND_TYPE_OPTIONS = BOND_TYPES.filter((t) => t.value !== "");
 
 function formatNum(n: number | null) {
   if (n === null) return "—";
@@ -53,6 +55,7 @@ function BondsContent() {
   const [pools, setPools] = useState<PoolOption[]>([]);
   const [selectedPoolId, setSelectedPoolId] = useState<string>("");
   const [selectedBondType, setSelectedBondType] = useState("A");
+  const [filterBondType, setFilterBondType] = useState("");
   const [bonds, setBonds] = useState<BondItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -74,9 +77,9 @@ function BondsContent() {
     if (!selectedPoolId) return;
     setLoading(true);
     try {
-      const { data } = await api.get("/bonds", {
-        params: { pool_id: selectedPoolId, page, size: pageSize },
-      });
+      const params: Record<string, string | number> = { pool_id: selectedPoolId, page, size: pageSize };
+      if (filterBondType) params.bond_type = filterBondType;
+      const { data } = await api.get("/bonds", { params });
       setBonds(data.items);
       setTotal(data.total);
     } catch {
@@ -84,7 +87,7 @@ function BondsContent() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPoolId, page]);
+  }, [selectedPoolId, page, filterBondType]);
 
   useEffect(() => {
     if (selectedPoolId) fetchBonds();
@@ -99,7 +102,7 @@ function BondsContent() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      const typeLabel = BOND_TYPES.find((t) => t.value === bondType)?.label || bondType;
+      const typeLabel = BOND_TYPE_OPTIONS.find((t) => t.value === bondType)?.label || bondType;
       link.setAttribute("download", `${typeLabel}_Import_Template.xlsx`);
       document.body.appendChild(link);
       link.click();
@@ -173,20 +176,20 @@ function BondsContent() {
 
         {selectedPoolId && (
           <>
-            {/* Bond type selector + Template download */}
+            {/* Bond type filter */}
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: "#2D2D2D" }}>채권유형 선택</label>
-              <div className="flex items-center gap-3 flex-wrap">
+              <label className="block text-sm font-semibold mb-2" style={{ color: "#2D2D2D" }}>채권유형 필터</label>
+              <div className="flex items-center gap-2 flex-wrap">
                 {BOND_TYPES.map((bt) => (
                   <button
                     key={bt.value}
-                    onClick={() => setSelectedBondType(bt.value)}
+                    onClick={() => { setFilterBondType(bt.value); setPage(1); }}
                     className="px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
                     style={{
                       borderRadius: "4px",
-                      backgroundColor: selectedBondType === bt.value ? "#D04A02" : "white",
-                      color: selectedBondType === bt.value ? "white" : "#2D2D2D",
-                      border: selectedBondType === bt.value ? "none" : "1px solid #DEDEDE",
+                      backgroundColor: filterBondType === bt.value ? "#2D2D2D" : "white",
+                      color: filterBondType === bt.value ? "white" : "#2D2D2D",
+                      border: filterBondType === bt.value ? "none" : "1px solid #DEDEDE",
                     }}
                   >
                     {bt.label}
@@ -195,35 +198,51 @@ function BondsContent() {
               </div>
             </div>
 
-            {/* Upload + Template buttons */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                onClick={() => handleTemplateDownload(selectedBondType)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold cursor-pointer"
-                style={{ border: "1px solid #DEDEDE", borderRadius: "4px", color: "#2D2D2D" }}
-              >
-                {BOND_TYPES.find((t) => t.value === selectedBondType)?.label} 템플릿 다운로드
-              </button>
-              <label
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold cursor-pointer"
-                style={{ border: "1px solid #D04A02", borderRadius: "4px", color: "#D04A02" }}
-              >
-                {importing ? "업로드 중..." : "엑셀 업로드"}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleImport}
-                  className="hidden"
-                  disabled={importing}
-                />
-              </label>
-              {importResult && (
-                <span className="text-sm" style={{ color: "#166534" }}>
-                  {importResult.file_name}: {importResult.success_count}건 성공
-                  {importResult.error_count > 0 && `, ${importResult.error_count}건 오류`}
-                </span>
-              )}
+            {/* Upload section: bond type for import + template download */}
+            <div
+              className="p-4"
+              style={{ backgroundColor: "#F5F5F5", borderRadius: "8px", border: "1px solid #DEDEDE" }}
+            >
+              <label className="block text-sm font-semibold mb-2" style={{ color: "#2D2D2D" }}>엑셀 업로드</label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <select
+                  value={selectedBondType}
+                  onChange={(e) => setSelectedBondType(e.target.value)}
+                  className="border text-sm outline-none"
+                  style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "8px 12px", color: "#2D2D2D" }}
+                >
+                  {BOND_TYPE_OPTIONS.map((bt) => (
+                    <option key={bt.value} value={bt.value}>{bt.label}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => handleTemplateDownload(selectedBondType)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold cursor-pointer"
+                  style={{ border: "1px solid #DEDEDE", borderRadius: "4px", color: "#2D2D2D", backgroundColor: "white" }}
+                >
+                  템플릿 다운로드
+                </button>
+                <label
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold cursor-pointer"
+                  style={{ border: "1px solid #D04A02", borderRadius: "4px", color: "#D04A02", backgroundColor: "white" }}
+                >
+                  {importing ? "업로드 중..." : "엑셀 업로드"}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleImport}
+                    className="hidden"
+                    disabled={importing}
+                  />
+                </label>
+                {importResult && (
+                  <span className="text-sm" style={{ color: "#166534" }}>
+                    {importResult.file_name}: {importResult.success_count}건 성공
+                    {importResult.error_count > 0 && `, ${importResult.error_count}건 오류`}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Bonds table */}
@@ -296,6 +315,19 @@ function BondsContent() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-end gap-1">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                  className="px-3 py-1.5 text-sm border"
+                  style={{
+                    borderColor: "#DEDEDE",
+                    borderRadius: "4px",
+                    color: page <= 1 ? "#DEDEDE" : "#2D2D2D",
+                    cursor: page <= 1 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  이전
+                </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <button
                     key={p}
@@ -311,6 +343,19 @@ function BondsContent() {
                     {p}
                   </button>
                 ))}
+                <button
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className="px-3 py-1.5 text-sm border"
+                  style={{
+                    borderColor: "#DEDEDE",
+                    borderRadius: "4px",
+                    color: page >= totalPages ? "#DEDEDE" : "#2D2D2D",
+                    cursor: page >= totalPages ? "not-allowed" : "pointer",
+                  }}
+                >
+                  다음
+                </button>
               </div>
             )}
           </>
@@ -336,11 +381,10 @@ function BondsContent() {
   );
 }
 
-export default function AdminBondsPage() {
+export default function BondsPage() {
   return (
     <RoleGuard permission="admin:access">
       <div className="min-h-screen" style={{ backgroundColor: "#FFFFFF" }}>
-        <AdminNav />
         <BondsContent />
       </div>
     </RoleGuard>

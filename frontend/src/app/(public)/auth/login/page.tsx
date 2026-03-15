@@ -65,7 +65,7 @@ export default function LoginPage() {
               alt="PwC"
               width={64}
               height={32}
-              style={{ objectFit: "contain", margin: "0 auto 12px" }}
+              style={{ objectFit: "contain", margin: "0 auto 12px", width: "auto", height: "auto" }}
             />
             <h1
               className="text-2xl font-bold"

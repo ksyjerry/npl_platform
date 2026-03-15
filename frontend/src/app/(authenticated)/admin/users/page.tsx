@@ -215,7 +215,7 @@ function UsersPageContent() {
         >
           {error}
           <button
-            className="ml-4 underline"
+            className="ml-4 underline cursor-pointer"
             onClick={() => setError("")}
           >
             닫기
@@ -331,14 +331,14 @@ function UsersPageContent() {
                               setNewCompanyId(u.company_id || null);
                               fetchCompanies();
                             }}
-                            className="text-sm hover:underline"
+                            className="text-sm hover:underline cursor-pointer"
                             style={{ color: "#D04A02" }}
                           >
                             회원수정
                           </button>
                           <button
                             onClick={() => setResetConfirm(u)}
-                            className="text-sm hover:underline"
+                            className="text-sm hover:underline cursor-pointer"
                             style={{ color: "#D04A02" }}
                           >
                             비밀번호 초기화
@@ -360,7 +360,7 @@ function UsersPageContent() {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className="px-3 py-1 text-sm border"
+                className="px-3 py-1 text-sm border cursor-pointer"
                 style={{
                   borderColor: p === page ? "#D04A02" : "#DEDEDE",
                   color: p === page ? "#D04A02" : "#464646",
@@ -412,7 +412,7 @@ function UsersPageContent() {
                   setNewCompanyId(null);
                   setRoleReason("");
                 }}
-                className="text-lg hover:opacity-70"
+                className="text-lg hover:opacity-70 cursor-pointer"
                 style={{ color: "#7D7D7D" }}
               >
                 ✕
@@ -523,7 +523,7 @@ function UsersPageContent() {
                   setNewCompanyId(null);
                   setRoleReason("");
                 }}
-                className="px-4 py-2 text-sm font-semibold border-2 transition-colors"
+                className="px-4 py-2 text-sm font-semibold border-2 transition-colors cursor-pointer"
                 style={{
                   borderColor: "#D04A02",
                   color: "#D04A02",
@@ -594,7 +594,7 @@ function UsersPageContent() {
             >
               <button
                 onClick={() => setResetConfirm(null)}
-                className="px-4 py-2 text-sm font-semibold border-2 transition-colors"
+                className="px-4 py-2 text-sm font-semibold border-2 transition-colors cursor-pointer"
                 style={{
                   borderColor: "#D04A02",
                   color: "#D04A02",
@@ -671,7 +671,7 @@ function UsersPageContent() {
             >
               <button
                 onClick={() => setResetResult(null)}
-                className="px-6 py-2 text-sm font-semibold text-white transition-colors"
+                className="px-6 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
                 style={{
                   backgroundColor: "#D04A02",
                   borderRadius: "4px",

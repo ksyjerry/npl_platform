@@ -20,8 +20,8 @@ interface PoolCompanyEntry {
 interface PoolForm {
   name: string;
   status: string;
-  collateral_large: string;
-  collateral_small: string;
+  collateral_large: string[];
+  collateral_small: string[];
   cutoff_date: string;
   bid_date: string;
   closing_date: string;
@@ -29,7 +29,7 @@ interface PoolForm {
   bidder_count: string;
   debtor_count: string;
   bond_count: string;
-  avg_overdue_months: string;
+  debtor_type: string[];
   opb: string;
   sale_price: string;
   resale_included: string;
@@ -42,8 +42,8 @@ interface PoolForm {
 const INITIAL: PoolForm = {
   name: "",
   status: "active",
-  collateral_large: "",
-  collateral_small: "",
+  collateral_large: [],
+  collateral_small: [],
   cutoff_date: "",
   bid_date: "",
   closing_date: "",
@@ -51,7 +51,7 @@ const INITIAL: PoolForm = {
   bidder_count: "",
   debtor_count: "",
   bond_count: "",
-  avg_overdue_months: "",
+  debtor_type: [],
   opb: "",
   sale_price: "",
   resale_included: "",
@@ -63,6 +63,7 @@ const INITIAL: PoolForm = {
 
 const COLLATERAL_LARGE = ["담보", "무담보"];
 const COLLATERAL_SMALL = ["Regular", "Special", "CCRS", "IRL", "일반무담보", "기타"];
+const DEBTOR_TYPES = ["개인", "개인사업자", "법인"];
 const SALE_METHODS = ["공개입찰", "제한경쟁입찰", "수의계약"];
 
 function SectionHeading({ title }: { title: string }) {
@@ -139,8 +140,9 @@ function PoolCreateContent() {
       name: form.name.trim(),
       status: form.status || "active",
     };
-    if (form.collateral_large) payload.collateral_large = form.collateral_large;
-    if (form.collateral_small) payload.collateral_small = form.collateral_small;
+    if (form.collateral_large.length > 0) payload.collateral_large = form.collateral_large;
+    if (form.collateral_small.length > 0) payload.collateral_small = form.collateral_small;
+    if (form.debtor_type.length > 0) payload.debtor_type = form.debtor_type;
     if (form.cutoff_date) payload.cutoff_date = form.cutoff_date;
     if (form.bid_date) payload.bid_date = form.bid_date;
     if (form.closing_date) payload.closing_date = form.closing_date;
@@ -148,7 +150,6 @@ function PoolCreateContent() {
     if (form.bidder_count) payload.bidder_count = parseInt(form.bidder_count);
     if (form.debtor_count) payload.debtor_count = parseInt(form.debtor_count);
     if (form.bond_count) payload.bond_count = parseInt(form.bond_count);
-    if (form.avg_overdue_months) payload.avg_overdue_months = parseFloat(form.avg_overdue_months);
     if (form.opb) payload.opb = parseInt(form.opb.replace(/,/g, ""));
     if (form.sale_price) payload.sale_price = parseInt(form.sale_price.replace(/,/g, ""));
     if (form.resale_included) payload.resale_included = form.resale_included === "Y";
@@ -248,21 +249,21 @@ function PoolCreateContent() {
         {/* 거래 참여자 */}
         <SectionHeading title="거래 참여자" />
         <div className="mb-10 space-y-6">
-          {/* 양도인 (Sellers) */}
+          {/* 매도인 (Sellers) */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <Label>양도인</Label>
+              <Label>매도인</Label>
               <button
                 type="button"
                 onClick={addSellerEntry}
-                className="text-xs font-semibold px-3 py-1"
+                className="text-xs font-semibold px-3 py-1 cursor-pointer"
                 style={{ color: "#D04A02", border: "1px solid #D04A02", borderRadius: "4px" }}
               >
                 + 추가
               </button>
             </div>
             {sellerEntries.length === 0 && (
-              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 양도인이 없습니다. + 추가 버튼을 눌러 추가하세요.</p>
+              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 매도인이 없습니다. + 추가 버튼을 눌러 추가하세요.</p>
             )}
             {sellerEntries.map((entry, idx) => (
               <div key={idx} className="flex gap-3 items-start mb-3">
@@ -288,7 +289,7 @@ function PoolCreateContent() {
                 <button
                   type="button"
                   onClick={() => removeSellerEntry(idx)}
-                  className="text-sm px-2 py-2"
+                  className="text-sm px-2 py-2 cursor-pointer"
                   style={{ color: "#DC2626" }}
                 >
                   삭제
@@ -297,21 +298,21 @@ function PoolCreateContent() {
             ))}
           </div>
 
-          {/* 양수인 (Buyers) */}
+          {/* 매수인 (Buyers) */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <Label>양수인</Label>
+              <Label>매수인</Label>
               <button
                 type="button"
                 onClick={addBuyerEntry}
-                className="text-xs font-semibold px-3 py-1"
+                className="text-xs font-semibold px-3 py-1 cursor-pointer"
                 style={{ color: "#D04A02", border: "1px solid #D04A02", borderRadius: "4px" }}
               >
                 + 추가
               </button>
             </div>
             {buyerEntries.length === 0 && (
-              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 양수인이 없습니다. + 추가 버튼을 눌러 추가하세요.</p>
+              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 매수인이 없습니다. + 추가 버튼을 눌러 추가하세요.</p>
             )}
             {buyerEntries.map((entry, idx) => (
               <div key={idx} className="flex gap-3 items-start mb-3">
@@ -337,7 +338,7 @@ function PoolCreateContent() {
                 <button
                   type="button"
                   onClick={() => removeBuyerEntry(idx)}
-                  className="text-sm px-2 py-2"
+                  className="text-sm px-2 py-2 cursor-pointer"
                   style={{ color: "#DC2626" }}
                 >
                   삭제
@@ -352,38 +353,93 @@ function PoolCreateContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-10">
           <div>
             <Label>담보유형(대)</Label>
-            <select value={form.collateral_large} onChange={(e) => update("collateral_large", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle}>
-              <option value="">선택</option>
-              {COLLATERAL_LARGE.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <div className="flex flex-wrap gap-4 mt-2">
+              {COLLATERAL_LARGE.map((c) => (
+                <label key={c} className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "#2D2D2D" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.collateral_large.includes(c)}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        collateral_large: e.target.checked
+                          ? [...prev.collateral_large, c]
+                          : prev.collateral_large.filter((v) => v !== c),
+                      }));
+                    }}
+                    className="w-4 h-4"
+                    style={{ accentColor: "#D04A02" }}
+                  />
+                  {c}
+                </label>
+              ))}
+            </div>
           </div>
           <div>
             <Label>담보유형(소)</Label>
-            <select value={form.collateral_small} onChange={(e) => update("collateral_small", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle}>
-              <option value="">선택</option>
-              {COLLATERAL_SMALL.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <div className="flex flex-wrap gap-4 mt-2">
+              {COLLATERAL_SMALL.map((c) => (
+                <label key={c} className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "#2D2D2D" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.collateral_small.includes(c)}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        collateral_small: e.target.checked
+                          ? [...prev.collateral_small, c]
+                          : prev.collateral_small.filter((v) => v !== c),
+                      }));
+                    }}
+                    className="w-4 h-4"
+                    style={{ accentColor: "#D04A02" }}
+                  />
+                  {c}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* 채권 정보 */}
         <SectionHeading title="채권 정보" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-10">
-          <div>
-            <Label>차주수</Label>
-            <input type="number" value={form.debtor_count} onChange={(e) => update("debtor_count", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle} placeholder="0" />
-          </div>
-          <div>
-            <Label>채권수</Label>
-            <input type="number" value={form.bond_count} onChange={(e) => update("bond_count", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle} placeholder="0" />
-          </div>
-          <div>
-            <Label>평균연체기간(개월)</Label>
-            <input type="number" step="0.1" value={form.avg_overdue_months} onChange={(e) => update("avg_overdue_months", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle} placeholder="0" />
+          <div className="md:col-span-2">
+            <Label>차주 구분</Label>
+            <div className="flex flex-wrap gap-4 mt-2">
+              {DEBTOR_TYPES.map((d) => (
+                <label key={d} className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "#2D2D2D" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.debtor_type.includes(d)}
+                    onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        debtor_type: e.target.checked
+                          ? [...prev.debtor_type, d]
+                          : prev.debtor_type.filter((v) => v !== d),
+                      }));
+                    }}
+                    className="w-4 h-4"
+                    style={{ accentColor: "#D04A02" }}
+                  />
+                  {d}
+                </label>
+              ))}
+            </div>
           </div>
           <div>
             <Label>OPB(원)</Label>
             <input type="text" value={form.opb} onChange={(e) => update("opb", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle} placeholder="0" />
+          </div>
+          <div />
+          <div>
+            <Label>차주 수</Label>
+            <input type="number" value={form.debtor_count} onChange={(e) => update("debtor_count", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle} placeholder="0" />
+          </div>
+          <div>
+            <Label>채권 수</Label>
+            <input type="number" value={form.bond_count} onChange={(e) => update("bond_count", e.target.value)} className="w-full border text-sm outline-none" style={inputStyle} placeholder="0" />
           </div>
         </div>
 

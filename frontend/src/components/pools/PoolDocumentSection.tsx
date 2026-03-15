@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import DocumentTable from "@/components/documents/DocumentTable";
 import FileUploadZone from "@/components/documents/FileUploadZone";
@@ -12,14 +12,8 @@ interface Props {
   canUpload: boolean;
 }
 
-const ROLE_TABS = [
-  { value: "seller", label: "매도인 자료" },
-  { value: "buyer", label: "매수인 자료" },
-  { value: "accountant", label: "회계법인 자료" },
-];
-
 export default function PoolDocumentSection({ poolId, canUpload }: Props) {
-  const [roleType, setRoleType] = useState("seller");
+  const roleType = "accountant";
   const [items, setItems] = useState<DocumentItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -53,25 +47,6 @@ export default function PoolDocumentSection({ poolId, canUpload }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Role type tabs */}
-      <div className="flex gap-2">
-        {ROLE_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => { setRoleType(tab.value); setPage(1); }}
-            className="px-4 py-2 text-sm font-medium transition-colors"
-            style={{
-              borderRadius: "4px",
-              backgroundColor: roleType === tab.value ? "#D04A02" : "white",
-              color: roleType === tab.value ? "white" : "#2D2D2D",
-              border: roleType === tab.value ? "none" : "1px solid #DEDEDE",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* Upload zone */}
       {canUpload && (
         <FileUploadZone poolId={poolId} roleType={roleType} onUploaded={fetchDocs} />

@@ -7,8 +7,8 @@ export interface PoolListItem {
   cutoff_date: string | null;
   bid_date: string | null;
   closing_date: string | null;
-  seller_name: string | null;
-  buyer_name: string | null;
+  seller_name: string[] | null;
+  buyer_name: string[] | null;
   opb: number | null;
   sale_price: number | null;
   sale_ratio: number | null;

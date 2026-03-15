@@ -94,7 +94,7 @@ export default function DocumentsPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className="px-6 py-3 text-sm font-medium transition-colors relative"
+                className="px-6 py-3 text-sm font-medium transition-colors relative cursor-pointer"
                 style={{
                   color: isActive ? "#D04A02" : "#7D7D7D",
                   fontWeight: isActive ? 600 : 400,

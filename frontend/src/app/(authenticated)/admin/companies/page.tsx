@@ -142,7 +142,7 @@ function CompaniesContent() {
         </div>
         <button
           onClick={openCreate}
-          className="px-4 py-2 text-sm font-semibold text-white transition-colors"
+          className="px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
           style={{ backgroundColor: "#D04A02", borderRadius: "4px" }}
         >
           + 회사 등록
@@ -155,7 +155,7 @@ function CompaniesContent() {
           <button
             key={tab.value}
             onClick={() => { setFilterType(tab.value); setPage(1); }}
-            className="px-4 py-2 text-sm font-semibold transition-colors border"
+            className="px-4 py-2 text-sm font-semibold transition-colors border cursor-pointer"
             style={{
               borderColor: filterType === tab.value ? "#D04A02" : "#DEDEDE",
               color: filterType === tab.value ? "#D04A02" : "#464646",
@@ -171,7 +171,7 @@ function CompaniesContent() {
       {error && (
         <div className="mx-8 mt-4 px-4 py-3 text-sm" style={{ backgroundColor: "#FEF2F2", color: "#DC2626", borderRadius: "4px", border: "1px solid #FECACA" }}>
           {error}
-          <button className="ml-4 underline" onClick={() => setError("")}>닫기</button>
+          <button className="ml-4 underline cursor-pointer" onClick={() => setError("")}>닫기</button>
         </div>
       )}
 
@@ -215,7 +215,7 @@ function CompaniesContent() {
                     <td className="px-4 py-3" style={{ color: "#464646" }}>{item.user_count}명</td>
                     <td className="px-4 py-3" style={{ color: "#464646" }}>{item.created_at?.slice(0, 10)}</td>
                     <td className="px-4 py-3 flex gap-3">
-                      <button onClick={() => openEdit(item)} className="text-sm hover:underline" style={{ color: "#D04A02" }}>수정</button>
+                      <button onClick={() => openEdit(item)} className="text-sm hover:underline cursor-pointer" style={{ color: "#D04A02" }}>수정</button>
                       <button
                         onClick={() => setDeleteTarget(item)}
                         className="text-sm hover:underline"
@@ -235,7 +235,7 @@ function CompaniesContent() {
         {totalPages > 1 && (
           <div className="flex justify-end gap-2 mt-4">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className="px-3 py-1 text-sm border" style={{
+              <button key={p} onClick={() => setPage(p)} className="px-3 py-1 text-sm border cursor-pointer" style={{
                 borderColor: p === page ? "#D04A02" : "#DEDEDE",
                 color: p === page ? "#D04A02" : "#464646",
                 backgroundColor: p === page ? "#FFF5EE" : "transparent",
@@ -257,7 +257,7 @@ function CompaniesContent() {
               <h3 className="text-lg font-bold" style={{ color: "#2D2D2D" }}>
                 {modal === "create" ? "회사 등록" : "회사 수정"}
               </h3>
-              <button onClick={closeModal} className="text-lg hover:opacity-70" style={{ color: "#7D7D7D" }}>✕</button>
+              <button onClick={closeModal} className="text-lg hover:opacity-70 cursor-pointer" style={{ color: "#7D7D7D" }}>✕</button>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
@@ -280,7 +280,7 @@ function CompaniesContent() {
               )}
             </div>
             <div className="px-6 pb-6 pt-4 flex justify-end gap-3" style={{ borderTop: "1px solid #DEDEDE" }}>
-              <button onClick={closeModal} className="px-4 py-2 text-sm font-semibold border-2 transition-colors" style={{ borderColor: "#D04A02", color: "#D04A02", borderRadius: "4px" }}>취소</button>
+              <button onClick={closeModal} className="px-4 py-2 text-sm font-semibold border-2 transition-colors cursor-pointer" style={{ borderColor: "#D04A02", color: "#D04A02", borderRadius: "4px" }}>취소</button>
               <button
                 onClick={modal === "create" ? handleCreate : handleUpdate}
                 disabled={saving || !formName.trim() || (modal === "edit" && !formReason.trim())}
@@ -307,11 +307,11 @@ function CompaniesContent() {
               &quot;{deleteTarget.name}&quot;을(를) 삭제하시겠습니까?<br />이 작업은 되돌릴 수 없습니다.
             </p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-semibold border" style={{ borderColor: "#DEDEDE", borderRadius: "4px", color: "#464646" }}>취소</button>
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm font-semibold border cursor-pointer" style={{ borderColor: "#DEDEDE", borderRadius: "4px", color: "#464646" }}>취소</button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-4 py-2 text-sm font-semibold text-white"
+                className="px-4 py-2 text-sm font-semibold text-white cursor-pointer"
                 style={{ backgroundColor: deleting ? "#FCA5A5" : "#DC2626", borderRadius: "4px" }}
               >
                 {deleting ? "삭제 중..." : "삭제"}

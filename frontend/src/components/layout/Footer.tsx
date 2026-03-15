@@ -19,7 +19,7 @@ export default function Footer() {
             alt="PwC"
             width={56}
             height={28}
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain", width: "auto", height: "auto" }}
             className="flex-shrink-0"
           />
           <div className="text-sm leading-relaxed" style={{ color: "#2D2D2D" }}>

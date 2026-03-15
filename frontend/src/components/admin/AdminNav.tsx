@@ -8,7 +8,6 @@ const TABS = [
   { href: "/admin/companies", label: "회사 관리" },
   { href: "/admin/consulting", label: "상담 관리" },
   { href: "/admin/pool-access", label: "Pool 접근 관리" },
-  { href: "/admin/bonds", label: "채권 관리" },
   { href: "/admin/permissions", label: "권한 관리" },
 ];
 

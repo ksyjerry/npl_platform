@@ -129,7 +129,7 @@ export default function AuthenticatedLayout({
               clearAccessToken();
               router.push("/auth/login");
             }}
-            className="text-sm font-semibold hover:underline"
+            className="text-sm font-semibold hover:underline cursor-pointer"
             style={{ color: "#D04A02" }}
           >
             로그아웃

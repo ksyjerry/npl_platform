@@ -138,7 +138,7 @@ export default function ConsultingModal({
             <h3 className="text-xl font-semibold" style={{ color: "#2D2D2D" }}>
               {type === "selling" ? "매각" : "인수"} 상담 신청
             </h3>
-            <button onClick={onClose} className="p-1" style={{ color: "#7D7D7D" }}>
+            <button onClick={onClose} className="p-1 cursor-pointer" style={{ color: "#7D7D7D" }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -223,10 +223,10 @@ export default function ConsultingModal({
                 <textarea
                   value={form.content}
                   onChange={(e) => update("content", e.target.value)}
-                  rows={6}
+                  rows={10}
                   className="w-full border text-sm resize-vertical outline-none"
                   style={inputStyle(!!errors.content)}
-                  placeholder="문의 내용을 입력해주세요 (10자 이상)"
+                  placeholder={"문의 내용을 입력해주세요.(10자 이상)\n\n※ 빠르고 정확한 상담을 위해 아래 정보를 함께 기재해주시면 좋습니다.\n\n① 자산 규모 : 채권(OPB), 부동산(감정평가액)\n② 자산 개요 : 채권종류(담보, 무담보 등), 담보 소재지 및 종류(주택, 상가, 토지 등)\n③ 희망 가격 : 희망 가격(원) 또는 가격률(%)"}
                 />
                 {errors.content && <p className="text-xs mt-1" style={{ color: "#E0301E" }}>{errors.content}</p>}
               </div>
@@ -240,7 +240,7 @@ export default function ConsultingModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="font-semibold border-2 transition-colors text-sm"
+                className="font-semibold border-2 transition-colors text-sm cursor-pointer"
                 style={{
                   borderColor: "#D04A02",
                   color: "#D04A02",

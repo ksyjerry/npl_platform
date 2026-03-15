@@ -44,7 +44,7 @@ export default function ReasonModal({
           </h3>
           <button
             onClick={onCancel}
-            className="text-lg hover:opacity-70"
+            className="text-lg hover:opacity-70 cursor-pointer"
             style={{ color: "#7D7D7D" }}
           >
             ✕
@@ -84,7 +84,7 @@ export default function ReasonModal({
         >
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-semibold border-2 transition-colors"
+            className="px-4 py-2 text-sm font-semibold border-2 transition-colors cursor-pointer"
             style={{
               borderColor: "#D04A02",
               color: "#D04A02",

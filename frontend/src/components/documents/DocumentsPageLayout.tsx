@@ -101,7 +101,7 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
           {canWrite && (
             <button
               onClick={() => setShowUpload(!showUpload)}
-              className="px-4 py-2 text-sm font-semibold text-white transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
               style={{ backgroundColor: "#D04A02", borderRadius: "4px" }}
             >
               {showUpload ? "닫기" : "+ 자료 등록"}
@@ -113,7 +113,7 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
         <div className="px-8 pt-4 flex justify-end">
           <button
             onClick={() => setShowUpload(!showUpload)}
-            className="px-4 py-2 text-sm font-semibold text-white transition-colors"
+            className="px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
             style={{ backgroundColor: "#D04A02", borderRadius: "4px" }}
           >
             {showUpload ? "닫기" : "+ 자료 등록"}
@@ -153,7 +153,7 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
                 {selectedPool && (
                   <button
                     onClick={handleClearPool}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-sm cursor-pointer"
                     style={{ color: "#7D7D7D" }}
                     title="선택 해제"
                   >
@@ -184,7 +184,7 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
                       <button
                         key={pool.id}
                         onClick={() => handleSelectPool(pool)}
-                        className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 flex items-center justify-between"
+                        className="w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 flex items-center justify-between cursor-pointer"
                         style={{ color: "#2D2D2D" }}
                       >
                         <span>{pool.name}</span>
@@ -234,7 +234,7 @@ export default function DocumentsPageLayout({ title, subtitle, roleType, canWrit
         <div className="px-8 py-4 flex justify-end gap-1">
           <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-sm border" style={{ borderColor: "#DEDEDE", borderRadius: "4px", color: page <= 1 ? "#DEDEDE" : "#2D2D2D", cursor: page <= 1 ? "not-allowed" : "pointer" }}>이전</button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button key={p} onClick={() => setPage(p)} className="px-3 py-1.5 text-sm border" style={{ borderRadius: "4px", backgroundColor: p === page ? "#D04A02" : "white", color: p === page ? "white" : "#2D2D2D", borderColor: p === page ? "#D04A02" : "#DEDEDE" }}>{p}</button>
+            <button key={p} onClick={() => setPage(p)} className="px-3 py-1.5 text-sm border cursor-pointer" style={{ borderRadius: "4px", backgroundColor: p === page ? "#D04A02" : "white", color: p === page ? "white" : "#2D2D2D", borderColor: p === page ? "#D04A02" : "#DEDEDE" }}>{p}</button>
           ))}
           <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-sm border" style={{ borderColor: "#DEDEDE", borderRadius: "4px", color: page >= totalPages ? "#DEDEDE" : "#2D2D2D", cursor: page >= totalPages ? "not-allowed" : "pointer" }}>다음</button>
         </div>

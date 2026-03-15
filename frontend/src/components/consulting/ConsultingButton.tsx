@@ -14,7 +14,7 @@ export default function ConsultingButton({ type }: ConsultingButtonProps) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="text-white text-lg font-semibold transition-colors"
+        className="text-white text-lg font-semibold transition-colors cursor-pointer"
         style={{
           backgroundColor: "#D04A02",
           borderRadius: "4px",

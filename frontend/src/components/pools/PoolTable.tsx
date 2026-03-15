@@ -6,7 +6,11 @@ import PoolStatusBadge from "./PoolStatusBadge";
 
 function masked(value: string | string[] | null): string {
   if (value === null) return "—";
-  if (Array.isArray(value)) return value.join(", ") || "—";
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "—";
+    if (value.length === 1) return value[0];
+    return `${value[0]} 등 ${value.length}`;
+  }
   return value;
 }
 
@@ -38,11 +42,10 @@ export default function PoolTable({ items, startIndex }: Props) {
     { key: "no", label: "No", align: "center" as const },
     { key: "name", label: "Pool명", align: "left" as const },
     { key: "collateral_large", label: "담보유형(대)", align: "center" as const },
-    { key: "collateral_small", label: "담보유형(소)", align: "center" as const },
-    { key: "cutoff_date", label: "자산확정일", align: "center" as const },
     { key: "bid_date", label: "입찰기일", align: "center" as const },
-    { key: "seller_name", label: "양도인", align: "left" as const },
-    { key: "buyer_name", label: "양수인", align: "left" as const },
+    { key: "closing_date", label: "거래종결일", align: "center" as const },
+    { key: "seller_name", label: "매도인", align: "left" as const },
+    { key: "buyer_name", label: "매수인", align: "left" as const },
     { key: "opb", label: "OPB(원)", align: "right" as const },
     { key: "sale_ratio", label: "매각가율", align: "right" as const },
     { key: "status", label: "상태", align: "center" as const },
@@ -68,7 +71,7 @@ export default function PoolTable({ items, startIndex }: Props) {
         <tbody>
           {items.map((item, idx) => (
             <tr
-              key={item.id}
+              key={`${item.id}-${idx}`}
               style={{
                 backgroundColor: idx % 2 === 0 ? "#FFFFFF" : "#FAFAFA",
                 borderBottom: "1px solid #DEDEDE",
@@ -86,11 +89,8 @@ export default function PoolTable({ items, startIndex }: Props) {
               <td className="px-4 py-3 text-center" style={item.collateral_large ? {} : { color: "#7D7D7D", fontStyle: "italic" }}>
                 {masked(item.collateral_large)}
               </td>
-              <td className="px-4 py-3 text-center" style={item.collateral_small ? {} : { color: "#7D7D7D", fontStyle: "italic" }}>
-                {masked(item.collateral_small)}
-              </td>
-              <td className="px-4 py-3 text-center">{masked(item.cutoff_date)}</td>
               <td className="px-4 py-3 text-center">{masked(item.bid_date)}</td>
+              <td className="px-4 py-3 text-center">{masked(item.closing_date)}</td>
               <td className="px-4 py-3" style={item.seller_name ? {} : { color: "#7D7D7D", fontStyle: "italic" }}>
                 {masked(item.seller_name)}
               </td>

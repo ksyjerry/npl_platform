@@ -83,6 +83,7 @@ const inputStyle = {
 
 const COLLATERAL_LARGE = ["담보", "무담보"];
 const COLLATERAL_SMALL = ["Regular", "Special", "CCRS", "IRL", "일반무담보", "기타"];
+const DEBTOR_TYPES = ["개인", "개인사업자", "법인"];
 const SALE_METHODS = ["공개입찰", "제한경쟁입찰", "수의계약"];
 
 interface EditForm {
@@ -95,9 +96,9 @@ interface EditForm {
   bidder_count: string;
   collateral_large: string[];
   collateral_small: string[];
+  debtor_type: string[];
   debtor_count: string;
   bond_count: string;
-  avg_overdue_months: string;
   opb: string;
   sale_price: string;
   resale_included: string;
@@ -118,9 +119,9 @@ function poolToEditForm(pool: PoolDetail): EditForm {
     bidder_count: pool.bidder_count != null ? String(pool.bidder_count) : "",
     collateral_large: pool.collateral_large || [],
     collateral_small: pool.collateral_small || [],
+    debtor_type: pool.debtor_type || [],
     debtor_count: pool.debtor_count != null ? String(pool.debtor_count) : "",
     bond_count: pool.bond_count != null ? String(pool.bond_count) : "",
-    avg_overdue_months: pool.avg_overdue_months != null ? String(pool.avg_overdue_months) : "",
     opb: pool.opb != null ? String(pool.opb) : "",
     sale_price: pool.sale_price != null ? String(pool.sale_price) : "",
     resale_included: pool.resale_included ? "Y" : pool.resale_included === false ? "N" : "",
@@ -182,6 +183,23 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
   const [form, setForm] = useState<EditForm>(poolToEditForm(pool));
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const [syncResult, setSyncResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await api.post(`/pools/${pool.id}/sync-bonds`);
+      setSyncResult({ type: "success", message: "채권 데이터 기준으로 동기화가 완료되었습니다.\n\n차주구분, 차주수, 채권수, OPB, 재매각 정보가 업데이트되었습니다." });
+      onUpdated();
+    } catch {
+      setSyncResult({ type: "error", message: "동기화에 실패했습니다.\n\n채권 데이터가 Import되어 있는지 확인해주세요." });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Company master data
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
@@ -240,12 +258,12 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         payload.collateral_large = form.collateral_large.length > 0 ? form.collateral_large : null;
       if (JSON.stringify(form.collateral_small) !== JSON.stringify(pool.collateral_small || []))
         payload.collateral_small = form.collateral_small.length > 0 ? form.collateral_small : null;
+      if (JSON.stringify(form.debtor_type) !== JSON.stringify(pool.debtor_type || []))
+        payload.debtor_type = form.debtor_type.length > 0 ? form.debtor_type : null;
       if (form.debtor_count !== (pool.debtor_count != null ? String(pool.debtor_count) : ""))
         payload.debtor_count = form.debtor_count ? parseInt(form.debtor_count) : null;
       if (form.bond_count !== (pool.bond_count != null ? String(pool.bond_count) : ""))
         payload.bond_count = form.bond_count ? parseInt(form.bond_count) : null;
-      if (form.avg_overdue_months !== (pool.avg_overdue_months != null ? String(pool.avg_overdue_months) : ""))
-        payload.avg_overdue_months = form.avg_overdue_months ? parseFloat(form.avg_overdue_months) : null;
       if (form.opb !== (pool.opb != null ? String(pool.opb) : ""))
         payload.opb = form.opb ? parseInt(form.opb.replace(/,/g, "")) : null;
       if (form.sale_price !== (pool.sale_price != null ? String(pool.sale_price) : ""))
@@ -294,13 +312,29 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
             <PoolStatusBadge status={pool.status} />
           </div>
           {canEdit && (
-            <button
-              onClick={startEdit}
-              className="px-4 py-2 text-sm font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#D04A02", borderRadius: "4px" }}
-            >
-              수정
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="px-4 py-2 text-sm font-semibold transition-colors"
+                style={{
+                  border: "1px solid #D04A02",
+                  color: syncing ? "#DEDEDE" : "#D04A02",
+                  borderRadius: "4px",
+                  cursor: syncing ? "not-allowed" : "pointer",
+                }}
+                title="채권 Import 데이터 기준으로 채권정보/재매각정보 자동 동기화"
+              >
+                {syncing ? "동기화 중..." : "채권정보 동기화"}
+              </button>
+              <button
+                onClick={startEdit}
+                className="px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
+                style={{ backgroundColor: "#D04A02", borderRadius: "4px" }}
+              >
+                수정
+              </button>
+            </div>
           )}
         </div>
 
@@ -318,10 +352,10 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         <div>
           <SectionHeading title="거래 참여자 정보" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FieldRow label="양도인" value={pool.seller_companies.length > 0 ? pool.seller_companies.map((c) => c.name).join(", ") : "—"} italic />
-            <FieldRow label="양도인 자문사" value={pool.seller_companies.length > 0 && pool.seller_companies[0].advisor ? pool.seller_companies[0].advisor : "—"} />
-            <FieldRow label="양수인" value={pool.buyer_companies.length > 0 ? pool.buyer_companies.map((c) => c.name).join(", ") : "—"} italic />
-            <FieldRow label="양수인 자문사" value={pool.buyer_companies.length > 0 && pool.buyer_companies[0].advisor ? pool.buyer_companies[0].advisor : "—"} />
+            <FieldRow label="매도인" value={pool.seller_companies.length > 0 ? pool.seller_companies.map((c) => c.name).join(", ") : "—"} italic />
+            <FieldRow label="매도인 자문사" value={pool.seller_companies.length > 0 && pool.seller_companies[0].advisor ? pool.seller_companies[0].advisor : "—"} />
+            <FieldRow label="매수인" value={pool.buyer_companies.length > 0 ? pool.buyer_companies.map((c) => c.name).join(", ") : "—"} italic />
+            <FieldRow label="매수인 자문사" value={pool.buyer_companies.length > 0 && pool.buyer_companies[0].advisor ? pool.buyer_companies[0].advisor : "—"} />
           </div>
         </div>
 
@@ -336,11 +370,10 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         <div>
           <SectionHeading title="채권 정보" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FieldRow label="차주구분" value={pool.debtor_type ? pool.debtor_type.join(", ") : "—"} />
-            <FieldRow label="차주수" value={masked(pool.debtor_count)} />
-            <FieldRow label="채권수" value={masked(pool.bond_count)} />
-            <FieldRow label="평균연체기간(개월)" value={masked(pool.avg_overdue_months)} />
+            <FieldRow label="차주 구분" value={pool.debtor_type ? pool.debtor_type.join(", ") : "—"} />
             <FieldRow label="OPB(원)" value={formatNumber(pool.opb)} />
+            <FieldRow label="차주 수" value={masked(pool.debtor_count)} />
+            <FieldRow label="채권 수" value={masked(pool.bond_count)} />
           </div>
         </div>
 
@@ -372,6 +405,22 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
             <FieldRow label="비고" value={masked(pool.remarks)} />
           </div>
         </div>
+
+        {toast && (
+          <div
+            className="fixed bottom-6 right-6 z-[60] bg-white"
+            style={{
+              maxWidth: "360px",
+              width: "100%",
+              borderRadius: "4px",
+              padding: "16px",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+              borderLeft: `4px solid ${toast.type === "success" ? "#166534" : "#E0301E"}`,
+            }}
+          >
+            <p className="text-sm" style={{ color: "#2D2D2D" }}>{toast.message}</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -387,14 +436,14 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         <div className="flex gap-3">
           <button
             onClick={cancelEdit}
-            className="px-4 py-2 text-sm font-semibold border-2 transition-colors"
+            className="px-4 py-2 text-sm font-semibold border-2 transition-colors cursor-pointer"
             style={{ borderColor: "#D04A02", color: "#D04A02", borderRadius: "4px" }}
           >
             취소
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-semibold text-white transition-colors"
+            className="px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
             style={{ backgroundColor: "#D04A02", borderRadius: "4px" }}
           >
             저장
@@ -433,6 +482,7 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
           </EditFieldRow>
           <EditFieldRow label="입찰참여자수">
             <EditInput type="number" value={form.bidder_count} onChange={(v) => update("bidder_count", v)} placeholder="0" />
+            <p className="text-xs mt-1" style={{ color: "#7D7D7D" }}>(참고) 입찰기일 이후 회계법인 수기 기재</p>
           </EditFieldRow>
         </div>
       </div>
@@ -441,21 +491,21 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
       <div>
         <SectionHeading title="거래 참여자 정보" />
         <div className="space-y-6">
-          {/* 양도인 */}
+          {/* 매도인 */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold" style={{ color: "#2D2D2D" }}>양도인</span>
+              <span className="text-sm font-semibold" style={{ color: "#2D2D2D" }}>매도인</span>
               <button
                 type="button"
                 onClick={() => setSellerEntries((prev) => [...prev, { company_id: 0, advisor: "" }])}
-                className="text-xs font-semibold px-3 py-1"
+                className="text-xs font-semibold px-3 py-1 cursor-pointer"
                 style={{ color: "#D04A02", border: "1px solid #D04A02", borderRadius: "4px" }}
               >
                 + 추가
               </button>
             </div>
             {sellerEntries.length === 0 && (
-              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 양도인이 없습니다.</p>
+              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 매도인이 없습니다.</p>
             )}
             {sellerEntries.map((entry, idx) => (
               <div key={idx} className="flex gap-3 items-start mb-3">
@@ -481,7 +531,7 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
                 <button
                   type="button"
                   onClick={() => setSellerEntries((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-sm px-2 py-2"
+                  className="text-sm px-2 py-2 cursor-pointer"
                   style={{ color: "#DC2626" }}
                 >
                   삭제
@@ -490,21 +540,21 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
             ))}
           </div>
 
-          {/* 양수인 */}
+          {/* 매수인 */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold" style={{ color: "#2D2D2D" }}>양수인</span>
+              <span className="text-sm font-semibold" style={{ color: "#2D2D2D" }}>매수인</span>
               <button
                 type="button"
                 onClick={() => setBuyerEntries((prev) => [...prev, { company_id: 0, advisor: "" }])}
-                className="text-xs font-semibold px-3 py-1"
+                className="text-xs font-semibold px-3 py-1 cursor-pointer"
                 style={{ color: "#D04A02", border: "1px solid #D04A02", borderRadius: "4px" }}
               >
                 + 추가
               </button>
             </div>
             {buyerEntries.length === 0 && (
-              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 양수인이 없습니다.</p>
+              <p className="text-sm" style={{ color: "#7D7D7D" }}>등록된 매수인이 없습니다.</p>
             )}
             {buyerEntries.map((entry, idx) => (
               <div key={idx} className="flex gap-3 items-start mb-3">
@@ -530,7 +580,7 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
                 <button
                   type="button"
                   onClick={() => setBuyerEntries((prev) => prev.filter((_, i) => i !== idx))}
-                  className="text-sm px-2 py-2"
+                  className="text-sm px-2 py-2 cursor-pointer"
                   style={{ color: "#DC2626" }}
                 >
                   삭제
@@ -592,17 +642,38 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
       <div>
         <SectionHeading title="채권 정보" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-          <EditFieldRow label="차주수">
-            <EditInput type="number" value={form.debtor_count} onChange={(v) => update("debtor_count", v)} placeholder="0" />
-          </EditFieldRow>
-          <EditFieldRow label="채권수">
-            <EditInput type="number" value={form.bond_count} onChange={(v) => update("bond_count", v)} placeholder="0" />
-          </EditFieldRow>
-          <EditFieldRow label="평균연체기간(개월)">
-            <EditInput type="number" value={form.avg_overdue_months} onChange={(v) => update("avg_overdue_months", v)} placeholder="0" />
-          </EditFieldRow>
+          <div className="md:col-span-2">
+            <EditFieldRow label="차주 구분">
+              <div className="flex flex-wrap gap-4 mt-1">
+                {DEBTOR_TYPES.map((d) => (
+                  <label key={d} className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "#2D2D2D" }}>
+                    <input
+                      type="checkbox"
+                      checked={form.debtor_type.includes(d)}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...form.debtor_type, d]
+                          : form.debtor_type.filter((v) => v !== d);
+                        setForm((prev) => ({ ...prev, debtor_type: next }));
+                      }}
+                      className="w-4 h-4"
+                      style={{ accentColor: "#D04A02" }}
+                    />
+                    {d}
+                  </label>
+                ))}
+              </div>
+            </EditFieldRow>
+          </div>
           <EditFieldRow label="OPB(원)">
             <EditInput value={form.opb} onChange={(v) => update("opb", v)} placeholder="0" />
+          </EditFieldRow>
+          <div />
+          <EditFieldRow label="차주 수">
+            <EditInput type="number" value={form.debtor_count} onChange={(v) => update("debtor_count", v)} placeholder="0" />
+          </EditFieldRow>
+          <EditFieldRow label="채권 수">
+            <EditInput type="number" value={form.bond_count} onChange={(v) => update("bond_count", v)} placeholder="0" />
           </EditFieldRow>
         </div>
       </div>
@@ -613,6 +684,7 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
           <EditFieldRow label="양수도가격(원)">
             <EditInput value={form.sale_price} onChange={(v) => update("sale_price", v)} placeholder="0" />
+            <p className="text-xs mt-1" style={{ color: "#7D7D7D" }}>(참고) 입찰기일 이후 회계법인 수기 기재</p>
           </EditFieldRow>
           <EditFieldRow label="매각가율(%)">
             <div className="w-full border text-sm px-3 py-2" style={{ borderColor: "#DEDEDE", borderRadius: "4px", color: "#7D7D7D", backgroundColor: "#F5F5F5" }}>
@@ -669,14 +741,14 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
       <div className="flex justify-end gap-3 pt-4" style={{ borderTop: "1px solid #DEDEDE" }}>
         <button
           onClick={cancelEdit}
-          className="px-6 py-2.5 text-sm font-semibold border-2 transition-colors"
+          className="px-6 py-2.5 text-sm font-semibold border-2 transition-colors cursor-pointer"
           style={{ borderColor: "#D04A02", color: "#D04A02", borderRadius: "4px" }}
         >
           취소
         </button>
         <button
           onClick={handleSave}
-          className="px-6 py-2.5 text-sm font-semibold text-white transition-colors"
+          className="px-6 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer"
           style={{ backgroundColor: "#D04A02", borderRadius: "4px" }}
         >
           저장
@@ -688,6 +760,52 @@ export default function PoolDetailForm({ pool, canEdit, onUpdated }: Props) {
         onConfirm={handleUpdate}
         onCancel={() => setShowReasonModal(false)}
       />
+
+      {/* 동기화 결과 팝업 */}
+      {syncResult && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onClick={() => setSyncResult(null)}
+        >
+          <div
+            className="bg-white w-full max-w-md shadow-xl p-6"
+            style={{ borderRadius: "8px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              {syncResult.type === "success" ? (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "#E8F5E9" }}>
+                  <svg className="w-5 h-5" fill="none" stroke="#2E7D32" strokeWidth={2.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "#FFEBEE" }}>
+                  <svg className="w-5 h-5" fill="none" stroke="#E0301E" strokeWidth={2.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+              )}
+              <h3 className="text-lg font-bold" style={{ color: "#2D2D2D" }}>
+                {syncResult.type === "success" ? "동기화 완료" : "동기화 실패"}
+              </h3>
+            </div>
+            <p className="text-sm whitespace-pre-line mb-6" style={{ color: "#464646" }}>
+              {syncResult.message}
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setSyncResult(null)}
+                className="px-6 py-2 text-sm font-semibold text-white cursor-pointer"
+                style={{ backgroundColor: syncResult.type === "success" ? "#D04A02" : "#464646", borderRadius: "4px" }}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

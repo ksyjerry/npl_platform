@@ -31,7 +31,7 @@ export default function Accordion({ items }: AccordionProps) {
           >
             <button
               onClick={() => setOpenIndex(isOpen ? null : i)}
-              className="w-full flex items-center justify-between px-6 py-5 text-left transition-colors duration-150"
+              className="w-full flex items-center justify-between px-6 py-5 text-left transition-colors duration-150 cursor-pointer"
               onMouseEnter={(e) => {
                 if (!isOpen) e.currentTarget.parentElement!.style.backgroundColor = "#FAFAFA";
               }}

@@ -9,6 +9,7 @@ services:
     volumes:
       - ./backend:/app
       - ./uploads:/tmp/uploads
+      - ./template:/app/template
     env_file: ./backend/.env
     depends_on:
       db:

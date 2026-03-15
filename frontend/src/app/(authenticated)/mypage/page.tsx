@@ -164,7 +164,7 @@ export default function MyPage() {
         {!editing ? (
           <button
             onClick={startEdit}
-            className="text-sm font-semibold text-white transition-colors"
+            className="text-sm font-semibold text-white transition-colors cursor-pointer"
             style={{
               backgroundColor: "#D04A02",
               borderRadius: "4px",
@@ -183,7 +183,7 @@ export default function MyPage() {
           <div className="flex gap-3">
             <button
               onClick={cancelEdit}
-              className="text-sm font-semibold border-2 transition-colors"
+              className="text-sm font-semibold border-2 transition-colors cursor-pointer"
               style={{
                 borderColor: "#D04A02",
                 color: "#D04A02",

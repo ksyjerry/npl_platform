@@ -205,6 +205,97 @@ class NoticeService:
         await self.db.delete(notice)
         await self.db.commit()
 
+    async def delete_file(
+        self, notice_id: int, file_id: int, user: User, request: Request
+    ) -> None:
+        if not self.storage:
+            raise HTTPException(500, "파일 스토리지가 설정되지 않았습니다.")
+
+        result = await self.db.execute(
+            select(NoticeFile).where(
+                NoticeFile.id == file_id,
+                NoticeFile.notice_id == notice_id,
+            )
+        )
+        nf = result.scalar_one_or_none()
+        if not nf:
+            raise HTTPException(404, "파일을 찾을 수 없습니다.")
+
+        # Delete from storage
+        path = decrypt_path(nf.file_path_enc)
+        try:
+            await self.storage.delete(path)
+        except Exception:
+            pass  # file may already be missing
+
+        # Audit log
+        audit = AuditLog(
+            table_name="notice_files",
+            record_id=file_id,
+            action="DELETE",
+            reason="첨부파일 삭제",
+            old_data={"file_name": nf.file_name, "notice_id": notice_id},
+            performed_by=user.id,
+            ip_address=request.client.host if request.client else "unknown",
+        )
+        self.db.add(audit)
+        await self.db.delete(nf)
+        await self.db.commit()
+
+    async def add_files(
+        self,
+        notice_id: int,
+        files: list[UploadFile],
+        user: User,
+        request: Request,
+    ) -> dict:
+        if not self.storage:
+            raise HTTPException(500, "파일 스토리지가 설정되지 않았습니다.")
+
+        notice = await self.repo.get_or_404(notice_id)
+
+        # Get current max sort_order
+        result = await self.db.execute(
+            select(NoticeFile.sort_order)
+            .where(NoticeFile.notice_id == notice_id)
+            .order_by(NoticeFile.sort_order.desc())
+        )
+        max_order = result.scalar_one_or_none() or 0
+
+        added = []
+        for idx, file in enumerate(files):
+            if not file.filename:
+                continue
+            content = await file.read()
+            validate_upload(file.filename, content)
+            path = f"notices/{uuid4()}_{file.filename}"
+            await self.storage.save(path, content)
+
+            nf = NoticeFile(
+                notice_id=notice_id,
+                file_name=file.filename,
+                file_path_enc=encrypt_path(path),
+                file_size=len(content),
+                sort_order=max_order + idx + 1,
+            )
+            self.db.add(nf)
+            added.append(file.filename)
+
+        # Audit log
+        audit = AuditLog(
+            table_name="notice_files",
+            record_id=notice_id,
+            action="CREATE",
+            reason="첨부파일 추가",
+            new_data={"files": added},
+            performed_by=user.id,
+            ip_address=request.client.host if request.client else "unknown",
+        )
+        self.db.add(audit)
+        await self.db.commit()
+
+        return {"message": f"{len(added)}개 파일이 추가되었습니다.", "count": len(added)}
+
     async def download_file(
         self, notice_id: int, file_id: int
     ) -> StreamingResponse:

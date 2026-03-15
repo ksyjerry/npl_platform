@@ -99,9 +99,17 @@ function ConsultingPageContent() {
     if (!selectedItem || !replyText.trim()) return;
     setReplying(true);
     try {
-      await api.post(`/admin/consulting/${selectedItem.id}/reply`, {
-        reply: replyText,
-      });
+      if (selectedItem.status === "replied") {
+        // Edit existing reply
+        await api.patch(`/admin/consulting/${selectedItem.id}/reply`, {
+          reply: replyText,
+        });
+      } else {
+        // New reply
+        await api.post(`/admin/consulting/${selectedItem.id}/reply`, {
+          reply: replyText,
+        });
+      }
       closeModal();
       await fetchItems();
     } catch {
@@ -134,7 +142,7 @@ function ConsultingPageContent() {
               setFilterType(tab.value);
               setPage(1);
             }}
-            className="px-4 py-2 text-sm font-semibold transition-colors border"
+            className="px-4 py-2 text-sm font-semibold transition-colors border cursor-pointer"
             style={{
               borderColor: filterType === tab.value ? "#D04A02" : "#DEDEDE",
               color: filterType === tab.value ? "#D04A02" : "#464646",
@@ -161,7 +169,7 @@ function ConsultingPageContent() {
         >
           {error}
           <button
-            className="ml-4 underline"
+            className="ml-4 underline cursor-pointer"
             onClick={() => setError("")}
           >
             닫기
@@ -273,7 +281,7 @@ function ConsultingPageContent() {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => openReply(item)}
-                        className="text-sm hover:underline"
+                        className="text-sm hover:underline cursor-pointer"
                         style={{ color: "#D04A02" }}
                       >
                         상담 보기
@@ -293,7 +301,7 @@ function ConsultingPageContent() {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className="px-3 py-1 text-sm border"
+                className="px-3 py-1 text-sm border cursor-pointer"
                 style={{
                   borderColor: p === page ? "#D04A02" : "#DEDEDE",
                   color: p === page ? "#D04A02" : "#464646",
@@ -335,7 +343,7 @@ function ConsultingPageContent() {
               </h3>
               <button
                 onClick={closeModal}
-                className="text-lg hover:opacity-70"
+                className="text-lg hover:opacity-70 cursor-pointer"
                 style={{ color: "#7D7D7D" }}
               >
                 ✕
@@ -464,27 +472,40 @@ function ConsultingPageContent() {
               style={{ borderTop: "1px solid #DEDEDE" }}
             >
               {readOnly ? (
-                <button
-                  onClick={closeModal}
-                  className="px-6 py-2 text-sm font-semibold text-white transition-colors"
-                  style={{
-                    backgroundColor: "#D04A02",
-                    borderRadius: "4px",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#EB8C00")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#D04A02")
-                  }
-                >
-                  닫기
-                </button>
+                <>
+                  <button
+                    onClick={() => setReadOnly(false)}
+                    className="px-4 py-2 text-sm font-semibold border-2 transition-colors cursor-pointer"
+                    style={{
+                      borderColor: "#D04A02",
+                      color: "#D04A02",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    답변 수정
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="px-6 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: "#D04A02",
+                      borderRadius: "4px",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#EB8C00")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#D04A02")
+                    }
+                  >
+                    닫기
+                  </button>
+                </>
               ) : (
                 <>
                   <button
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-semibold border-2 transition-colors"
+                    className="px-4 py-2 text-sm font-semibold border-2 transition-colors cursor-pointer"
                     style={{
                       borderColor: "#D04A02",
                       color: "#D04A02",
@@ -509,7 +530,7 @@ function ConsultingPageContent() {
                           : "not-allowed",
                     }}
                   >
-                    {replying ? "등록 중..." : "답변 등록"}
+                    {replying ? "등록 중..." : selectedItem.status === "replied" ? "답변 수정" : "답변 등록"}
                   </button>
                 </>
               )}

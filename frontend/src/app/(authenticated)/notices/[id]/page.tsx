@@ -149,7 +149,7 @@ export default function NoticeDetailPage() {
                 <button
                   key={file.id}
                   onClick={() => handleFileDownload(noticeId, file.id, file.file_name)}
-                  className="flex items-center gap-2 text-sm hover:underline"
+                  className="flex items-center gap-2 text-sm hover:underline cursor-pointer"
                   style={{ color: "#D04A02" }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -172,7 +172,7 @@ export default function NoticeDetailPage() {
             <div className="mt-8 pt-6" style={{ borderTop: "1px solid #DEDEDE" }}>
               <button
                 onClick={() => handleDownload(notice.attachment_doc_id!, notice.attachment_name!)}
-                className="flex items-center gap-2 text-sm hover:underline"
+                className="flex items-center gap-2 text-sm hover:underline cursor-pointer"
                 style={{ color: "#D04A02" }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -209,7 +209,7 @@ export default function NoticeDetailPage() {
                 <span style={{ color: "#DEDEDE" }}>|</span>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="text-sm hover:underline"
+                  className="text-sm hover:underline cursor-pointer"
                   style={{ color: "#E0301E" }}
                 >
                   삭제

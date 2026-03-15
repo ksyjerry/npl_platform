@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import ReasonModal from "@/components/ui/ReasonModal";
+
+interface PoolOption {
+  id: number;
+  name: string;
+}
 
 interface NoticeEditModalProps {
   notice: {
     id: number;
     category: string;
+    pool_id?: number | null;
     title: string;
     content: string;
   };
@@ -16,12 +22,19 @@ interface NoticeEditModalProps {
 }
 
 export default function NoticeEditModal({ notice, onClose, onUpdated }: NoticeEditModalProps) {
-  const [category, setCategory] = useState(notice.category || "");
+  const [selectedPool, setSelectedPool] = useState<string>(notice.pool_id ? String(notice.pool_id) : "");
   const [title, setTitle] = useState(notice.title);
   const [content, setContent] = useState(notice.content || "");
+  const [pools, setPools] = useState<PoolOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    api.get("/pools", { params: { status: "active", size: 100 } })
+      .then((res) => setPools(res.data.items.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name }))))
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,9 +46,10 @@ export default function NoticeEditModal({ notice, onClose, onUpdated }: NoticeEd
     setShowReasonModal(false);
     setSubmitting(true);
     try {
+      const pool = pools.find((p) => String(p.id) === selectedPool);
       await api.patch(`/notices/${notice.id}`, {
         reason,
-        category: category || undefined,
+        category: pool ? pool.name : "전체",
         title,
         content,
       });
@@ -77,7 +91,7 @@ export default function NoticeEditModal({ notice, onClose, onUpdated }: NoticeEd
             <h3 className="text-xl font-semibold" style={{ color: "#2D2D2D" }}>
               공지 수정
             </h3>
-            <button onClick={onClose} className="p-1" style={{ color: "#7D7D7D" }}>
+            <button onClick={onClose} className="p-1 cursor-pointer" style={{ color: "#7D7D7D" }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -86,18 +100,22 @@ export default function NoticeEditModal({ notice, onClose, onUpdated }: NoticeEd
 
           <form onSubmit={handleSubmit}>
             <div className="px-6 py-5 space-y-4">
-              {/* Category */}
+              {/* 구분 (Pool 선택 통합) */}
               <div>
                 <label className="block text-sm font-semibold mb-1" style={{ color: "#2D2D2D" }}>
                   구분
                 </label>
-                <input
-                  type="text"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                <select
+                  value={selectedPool}
+                  onChange={(e) => setSelectedPool(e.target.value)}
                   className="w-full border text-base"
                   style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "10px 14px", color: "#2D2D2D" }}
-                />
+                >
+                  <option value="">전체 공지</option>
+                  {pools.map((p) => (
+                    <option key={p.id} value={String(p.id)}>{p.name}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Title */}
@@ -139,7 +157,7 @@ export default function NoticeEditModal({ notice, onClose, onUpdated }: NoticeEd
               <button
                 type="button"
                 onClick={onClose}
-                className="font-semibold border-2 transition-colors text-sm"
+                className="font-semibold border-2 transition-colors text-sm cursor-pointer"
                 style={{ borderColor: "#D04A02", color: "#D04A02", borderRadius: "4px", padding: "8px 24px" }}
               >
                 취소

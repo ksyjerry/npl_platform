@@ -7,10 +7,14 @@ import { useNoticeDetail } from "@/hooks/useNotices";
 import api from "@/lib/api";
 import RoleGuard from "@/components/auth/RoleGuard";
 import ReasonModal from "@/components/ui/ReasonModal";
+import type { NoticeFileItem } from "@/types/notice";
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB per file
+const MAX_TOTAL_SIZE = 200 * 1024 * 1024; // 200MB total
 
 function NoticeEditContent({ noticeId }: { noticeId: number }) {
   const router = useRouter();
-  const { notice, loading } = useNoticeDetail(noticeId);
+  const { notice, loading, refetch } = useNoticeDetail(noticeId);
   const [category, setCategory] = useState<string | null>(null);
   const [title, setTitle] = useState<string | null>(null);
   const [content, setContent] = useState<string | null>(null);
@@ -18,10 +22,38 @@ function NoticeEditContent({ noticeId }: { noticeId: number }) {
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+  // File management
+  const [deletedFileIds, setDeletedFileIds] = useState<number[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+
   // Use notice data as initial values (once loaded)
   const currentCategory = category ?? notice?.category ?? "";
   const currentTitle = title ?? notice?.title ?? "";
   const currentContent = content ?? notice?.content ?? "";
+
+  // Existing files minus deleted ones
+  const existingFiles = (notice?.files ?? []).filter((f) => !deletedFileIds.includes(f.id));
+
+  const handleFileAdd = (fileList: FileList | null) => {
+    if (!fileList) return;
+    const incoming = Array.from(fileList);
+    const oversized = incoming.filter((f) => f.size > MAX_FILE_SIZE);
+    if (oversized.length > 0) {
+      setToast({ type: "error", message: `파일당 최대 50MB까지 업로드 가능합니다. (${oversized.map((f) => f.name).join(", ")})` });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+    const existingTotal = (notice?.files ?? [])
+      .filter((f) => !deletedFileIds.includes(f.id))
+      .reduce((sum, f) => sum + (f.file_size ?? 0), 0);
+    const newTotal = existingTotal + newFiles.reduce((sum, f) => sum + f.size, 0) + incoming.reduce((sum, f) => sum + f.size, 0);
+    if (newTotal > MAX_TOTAL_SIZE) {
+      setToast({ type: "error", message: "전체 첨부파일 합계는 200MB를 초과할 수 없습니다." });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+    setNewFiles((prev) => [...prev, ...incoming]);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,12 +65,28 @@ function NoticeEditContent({ noticeId }: { noticeId: number }) {
     setShowReasonModal(false);
     setSubmitting(true);
     try {
+      // 1. Update notice text
       await api.patch(`/notices/${noticeId}`, {
         reason,
         category: currentCategory || undefined,
         title: currentTitle,
         content: currentContent,
       });
+
+      // 2. Delete removed files
+      for (const fileId of deletedFileIds) {
+        await api.delete(`/notices/${noticeId}/files/${fileId}`);
+      }
+
+      // 3. Upload new files
+      if (newFiles.length > 0) {
+        const formData = new FormData();
+        newFiles.forEach((f) => formData.append("files", f));
+        await api.post(`/notices/${noticeId}/files`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
       setToast({ type: "success", message: "공지사항이 수정되었습니다." });
       setTimeout(() => {
         router.push(`/notices/${noticeId}`);
@@ -71,6 +119,9 @@ function NoticeEditContent({ noticeId }: { noticeId: number }) {
       </div>
     );
   }
+
+  const formatSize = (size: number) =>
+    size < 1024 * 1024 ? `${(size / 1024).toFixed(1)}KB` : `${(size / (1024 * 1024)).toFixed(1)}MB`;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#FFFFFF" }}>
@@ -141,6 +192,84 @@ function NoticeEditContent({ noticeId }: { noticeId: number }) {
               style={{ borderColor: "#DEDEDE", borderRadius: "4px", padding: "10px 14px", color: "#2D2D2D" }}
               required
             />
+          </div>
+
+          {/* Files */}
+          <div>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: "#2D2D2D" }}>
+              첨부파일
+            </label>
+            <div className="flex items-center gap-3 mb-2">
+              <label
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold cursor-pointer"
+                style={{ border: "1px solid #D04A02", borderRadius: "4px", color: "#D04A02" }}
+              >
+                파일 선택
+                <input
+                  type="file"
+                  onChange={(e) => { handleFileAdd(e.target.files); e.target.value = ""; }}
+                  accept=".pdf,.xlsx,.docx,.zip,.csv,.hwp"
+                  multiple
+                  className="hidden"
+                />
+              </label>
+              <span className="text-xs" style={{ color: "#7D7D7D" }}>파일당 50MB, 전체 200MB 이내</span>
+            </div>
+
+            {/* Existing files */}
+            {existingFiles.length > 0 && (
+              <div className="space-y-1.5 mt-2">
+                {existingFiles.map((f) => (
+                  <div
+                    key={`existing-${f.id}`}
+                    className="flex items-center justify-between px-3 py-2 border text-sm"
+                    style={{ borderColor: "#DEDEDE", borderRadius: "4px", backgroundColor: "#FAFAFA" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: "#2D2D2D" }}>{f.file_name}</span>
+                      {f.file_size != null && (
+                        <span style={{ color: "#7D7D7D" }}>({formatSize(f.file_size)})</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDeletedFileIds((prev) => [...prev, f.id])}
+                      className="text-xs font-medium hover:underline cursor-pointer"
+                      style={{ color: "#E0301E" }}
+                    >
+                      제거
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* New files */}
+            {newFiles.length > 0 && (
+              <div className="space-y-1.5 mt-2">
+                {newFiles.map((f, idx) => (
+                  <div
+                    key={`new-${idx}`}
+                    className="flex items-center justify-between px-3 py-2 border text-sm"
+                    style={{ borderColor: "#D04A02", borderRadius: "4px", backgroundColor: "#FFF5EE" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: "#D04A02", color: "white" }}>NEW</span>
+                      <span style={{ color: "#2D2D2D" }}>{f.name}</span>
+                      <span style={{ color: "#7D7D7D" }}>({formatSize(f.size)})</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== idx))}
+                      className="text-xs font-medium hover:underline cursor-pointer"
+                      style={{ color: "#E0301E" }}
+                    >
+                      제거
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

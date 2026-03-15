@@ -26,8 +26,8 @@ class PoolRepository:
         status: str | None = None,
         name: str | None = None,
         seller_name: str | None = None,
-        cutoff_from=None,
-        cutoff_to=None,
+        closing_from=None,
+        closing_to=None,
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[Pool], int]:
@@ -56,21 +56,16 @@ class PoolRepository:
             query = query.where(Pool.id.in_(seller_pool_ids))
             count_query = count_query.where(Pool.id.in_(seller_pool_ids))
 
-        if cutoff_from:
-            query = query.where(Pool.cutoff_date >= cutoff_from)
-            count_query = count_query.where(Pool.cutoff_date >= cutoff_from)
+        if closing_from:
+            query = query.where(Pool.closing_date >= closing_from)
+            count_query = count_query.where(Pool.closing_date >= closing_from)
 
-        if cutoff_to:
-            query = query.where(Pool.cutoff_date <= cutoff_to)
-            count_query = count_query.where(Pool.cutoff_date <= cutoff_to)
+        if closing_to:
+            query = query.where(Pool.closing_date <= closing_to)
+            count_query = count_query.where(Pool.closing_date <= closing_to)
 
-        # Sort: active(0) -> closed(1) -> cancelled(2), then by created_at DESC
-        status_order = case(
-            (Pool.status == "active", 0),
-            (Pool.status == "closed", 1),
-            else_=2,
-        )
-        query = query.order_by(status_order, Pool.created_at.desc())
+        # Sort by pool name ascending
+        query = query.order_by(Pool.name.asc())
         query = query.offset((page - 1) * size).limit(size)
 
         result = await self.db.execute(query)
@@ -148,6 +143,6 @@ class PoolRepository:
         out: dict[int, list[dict]] = {}
         for pc, cname in rows:
             out.setdefault(pc.pool_id, []).append(
-                {"role": pc.role, "company_name": cname}
+                {"role": pc.role, "company_name": cname, "company_id": pc.company_id}
             )
         return out

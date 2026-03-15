@@ -88,8 +88,8 @@ class PoolListItem(BaseModel):
     cutoff_date: Optional[date] = None
     bid_date: Optional[date] = None
     closing_date: Optional[date] = None
-    seller_name: Optional[str] = None
-    buyer_name: Optional[str] = None
+    seller_name: Optional[list[str]] = None
+    buyer_name: Optional[list[str]] = None
     opb: Optional[int] = None
     sale_price: Optional[int] = None
     sale_ratio: Optional[float] = None
@@ -99,6 +99,31 @@ class PoolListItem(BaseModel):
 
 class PoolListResponse(BaseModel):
     items: list[PoolListItem]
+    total: int
+    page: int
+    size: int
+
+
+class PoolSellerItem(BaseModel):
+    """One row per seller-pool combination for the '매도인별' tab."""
+    pool_id: int
+    pool_name: str
+    status: str
+    seller_company_id: int
+    seller_name: str
+    collateral_large: Optional[list[str]] = None
+    collateral_small: Optional[list[str]] = None
+    bid_date: Optional[date] = None
+    closing_date: Optional[date] = None
+    buyer_name: Optional[list[str]] = None
+    opb: Optional[int] = None
+    sale_price: Optional[int] = None
+    sale_ratio: Optional[float] = None
+    can_view_detail: bool = False
+
+
+class PoolSellerListResponse(BaseModel):
+    items: list[PoolSellerItem]
     total: int
     page: int
     size: int

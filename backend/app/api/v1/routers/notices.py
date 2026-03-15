@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.dependencies.auth import get_current_user, require_role
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.notice import NoticeDetail, NoticeListResponse, NoticeResponse, NoticeUpdate
+from app.schemas.notice import NoticeDelete, NoticeDetail, NoticeListResponse, NoticeResponse, NoticeUpdate
 from app.services.notice import NoticeService
 from app.services.file_storage import FileStorageService, get_storage
 
@@ -64,13 +64,38 @@ async def update_notice(
 @router.delete("/{notice_id}")
 async def delete_notice(
     notice_id: int,
+    data: NoticeDelete,
     request: Request,
-    reason: str = "",
     user: User = Depends(require_role("admin", "accountant")),
     db: AsyncSession = Depends(get_db),
 ):
-    await NoticeService(db).delete(notice_id, reason, user, request)
+    await NoticeService(db).delete(notice_id, data.reason, user, request)
     return {"message": "삭제되었습니다."}
+
+
+@router.delete("/{notice_id}/files/{file_id}")
+async def delete_notice_file(
+    notice_id: int,
+    file_id: int,
+    request: Request,
+    user: User = Depends(require_role("admin", "accountant")),
+    db: AsyncSession = Depends(get_db),
+    storage: FileStorageService = Depends(get_storage),
+):
+    await NoticeService(db, storage).delete_file(notice_id, file_id, user, request)
+    return {"message": "파일이 삭제되었습니다."}
+
+
+@router.post("/{notice_id}/files", status_code=201)
+async def add_notice_files(
+    notice_id: int,
+    request: Request,
+    files: list[UploadFile] = File(default=[]),
+    user: User = Depends(require_role("admin", "accountant")),
+    db: AsyncSession = Depends(get_db),
+    storage: FileStorageService = Depends(get_storage),
+):
+    return await NoticeService(db, storage).add_files(notice_id, files, user, request)
 
 
 @router.get("/{notice_id}/files/{file_id}/download")

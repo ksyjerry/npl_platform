@@ -21,10 +21,14 @@ class BondRepository:
     async def get_list(
         self,
         pool_id: int,
+        bond_type: str | None = None,
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[Bond], int]:
-        base = and_(Bond.pool_id == pool_id, Bond.is_deleted == False)
+        conditions = [Bond.pool_id == pool_id, Bond.is_deleted == False]
+        if bond_type:
+            conditions.append(Bond.bond_type == bond_type)
+        base = and_(*conditions)
 
         query = (
             select(Bond)

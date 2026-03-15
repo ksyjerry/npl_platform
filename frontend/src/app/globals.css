@@ -28,6 +28,21 @@ body {
   outline-offset: 2px;
 }
 
+/* Clickable elements: always show pointer cursor */
+button,
+[role="button"],
+a,
+label[for],
+input[type="file"] + label,
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+button[disabled] {
+  cursor: not-allowed;
+}
+
 /* Orange divider utility */
 .pwc-divider {
   border-bottom: 4px solid var(--pwc-orange);

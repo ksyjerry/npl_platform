@@ -7,8 +7,8 @@ import type { PoolDetail, PoolListItem, PoolListResponse } from "@/types/pool";
 export interface PoolFilters {
   name?: string;
   seller_name?: string;
-  cutoff_from?: string;
-  cutoff_to?: string;
+  closing_from?: string;
+  closing_to?: string;
 }
 
 export function usePools(initialStatus?: string) {
@@ -29,8 +29,8 @@ export function usePools(initialStatus?: string) {
       if (status) params.status = status;
       if (filters.name) params.name = filters.name;
       if (filters.seller_name) params.seller_name = filters.seller_name;
-      if (filters.cutoff_from) params.cutoff_from = filters.cutoff_from;
-      if (filters.cutoff_to) params.cutoff_to = filters.cutoff_to;
+      if (filters.closing_from) params.closing_from = filters.closing_from;
+      if (filters.closing_to) params.closing_to = filters.closing_to;
       const { data } = await api.get<PoolListResponse>("/pools", { params });
       setItems(data.items);
       setTotal(data.total);

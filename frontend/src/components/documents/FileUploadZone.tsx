@@ -140,7 +140,7 @@ export default function FileUploadZone({ poolId, roleType, onUploaded }: FileUpl
               </div>
               <button
                 onClick={() => removeStaged(idx)}
-                className="text-xs px-2 py-1"
+                className="text-xs px-2 py-1 cursor-pointer"
                 style={{ color: "#DC2626" }}
               >
                 제거

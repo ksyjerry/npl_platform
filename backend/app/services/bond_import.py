@@ -1,10 +1,13 @@
 import io
+import os
+import re
 from datetime import date, datetime
+from urllib.parse import quote
 from uuid import uuid4
 
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
-from openpyxl import Workbook, load_workbook
+from openpyxl import load_workbook
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.bond import Bond
@@ -12,83 +15,129 @@ from app.models.bond_import_log import BondImportLog
 from app.models.user import User
 from app.schemas.bond import BondImportResult
 
-# Excel header (Korean) → model field mapping
-COLUMN_MAP = {
+# Bond type definitions
+BOND_TYPES = {
+    "A": "일반무담보",
+    "B1": "CCRS",
+    "B2": "IRL",
+    "C": "담보",
+}
+
+# Template file mapping
+TEMPLATE_FILES = {
+    "A": "A_일반무담보_Import_Template.xlsx",
+    "B1": "B1_CCRS_Import_Template.xlsx",
+    "B2": "B2_IRL_Import_Template.xlsx",
+    "C": "C_담보_Import_Template.xlsx",
+}
+
+# Common columns across all 4 types → Bond model fields
+COMMON_COLUMN_MAP = {
+    "자산확정일": "_cutoff_date",
+    "금융회사명": "creditor",
+    "고객번호": "debtor_id_masked",
     "채권번호": "bond_no",
-    "차주구분": "debtor_type",
-    "차주ID": "debtor_id_masked",
-    "채권자": "creditor",
-    "상품유형": "product_type",
-    "담보유형": "collateral_type",
-    "담보주소": "collateral_address",
-    "원금": "original_amount",
-    "OPB": "opb",
-    "이자잔액": "interest_balance",
-    "합계잔액": "total_balance",
-    "연체시작일": "overdue_start_date",
-    "연체개월": "overdue_months",
-    "법적상태": "legal_status",
+    "차주 구분": "debtor_type",
+    "양도횟수": "transfer_count",
+    "상각 여부": "_writeoff",
 }
 
-# Template column order (defines the Excel template layout)
-TEMPLATE_COLUMNS = list(COLUMN_MAP.keys())
+# OPB column name (same across all types)
+OPB_COLUMN = "미상환채권잔액(OPB)"
 
-INT_FIELDS = {
-    "original_amount", "opb", "interest_balance", "total_balance", "overdue_months"
+# Type-specific columns that map to Bond model fields
+TYPE_SPECIFIC_MAP = {
+    "A": {
+        "대출상품명": "product_type",
+        "최초대출금액": "original_amount",
+        "최초 연체일": "overdue_start_date",
+    },
+    "B1": {
+        "연체시작일": "overdue_start_date",
+    },
+    "B2": {
+        "연체시작일": "overdue_start_date",
+    },
+    "C": {
+        "자산유형": "collateral_type",
+        "대출과목": "product_type",
+        "최초대출원금": "original_amount",
+        "연체시작일": "overdue_start_date",
+        "채권원금잔액": "interest_balance",
+    },
 }
 
-DATE_FIELDS = {"overdue_start_date"}
+# Fields that should be parsed as integers
+INT_FIELDS = {"original_amount", "opb", "interest_balance", "total_balance", "transfer_count"}
+
+# Fields that should be parsed as dates
+DATE_FIELDS = {"overdue_start_date", "_cutoff_date"}
+
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "template")
 
 
-def generate_template() -> StreamingResponse:
-    """Generate a blank Excel template with headers and column descriptions."""
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "채권 데이터"
+def get_template(bond_type: str) -> StreamingResponse:
+    """Serve a pre-made Excel template file for the given bond type."""
+    if bond_type not in TEMPLATE_FILES:
+        raise HTTPException(400, f"지원하지 않는 채권유형입니다: {bond_type}")
 
-    # Header row
-    for col_idx, header in enumerate(TEMPLATE_COLUMNS, start=1):
-        cell = ws.cell(row=1, column=col_idx, value=header)
-        cell.font = cell.font.copy(bold=True)
+    filename = TEMPLATE_FILES[bond_type]
+    filepath = os.path.join(TEMPLATE_DIR, filename)
 
-    # Description row (row 2) as guide — light gray
-    descriptions = {
-        "채권번호": "예: B001",
-        "차주구분": "개인 / 법인",
-        "차주ID": "마스킹된 ID (예: ***-1234)",
-        "채권자": "금융기관명",
-        "상품유형": "신용대출, 담보대출 등",
-        "담보유형": "무담보, 부동산 등",
-        "담보주소": "담보물 주소",
-        "원금": "숫자 (원)",
-        "OPB": "숫자 (원)",
-        "이자잔액": "숫자 (원)",
-        "합계잔액": "숫자 (원)",
-        "연체시작일": "YYYY-MM-DD",
-        "연체개월": "숫자",
-        "법적상태": "정상, 소송중 등",
-    }
-    from openpyxl.styles import Font, PatternFill
-    guide_font = Font(color="999999", italic=True, size=9)
-    guide_fill = PatternFill(start_color="F5F5F5", end_color="F5F5F5", fill_type="solid")
-    for col_idx, header in enumerate(TEMPLATE_COLUMNS, start=1):
-        cell = ws.cell(row=2, column=col_idx, value=descriptions.get(header, ""))
-        cell.font = guide_font
-        cell.fill = guide_fill
+    if not os.path.exists(filepath):
+        raise HTTPException(404, f"템플릿 파일을 찾을 수 없습니다: {filename}")
 
-    # Auto-adjust column widths
-    for col_idx, header in enumerate(TEMPLATE_COLUMNS, start=1):
-        ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = max(len(header) * 2.5, 12)
-
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
+    with open(filepath, "rb") as f:
+        content = f.read()
 
     return StreamingResponse(
-        buf,
+        io.BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=bond_import_template.xlsx"},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
+
+
+# Keep backward compat
+def generate_template() -> StreamingResponse:
+    """Default: serve type A template."""
+    return get_template("A")
+
+
+def _parse_value(val, model_field: str):
+    """Parse a cell value for the appropriate field type."""
+    if val is None:
+        return None
+
+    if model_field in DATE_FIELDS:
+        if isinstance(val, (date, datetime)):
+            return val if isinstance(val, date) and not isinstance(val, datetime) else val.date()
+        # Excel serial number (int or float) → date
+        if isinstance(val, (int, float)) and 1 < val < 100000:
+            from datetime import timedelta
+            excel_epoch = date(1899, 12, 30)
+            return excel_epoch + timedelta(days=int(val))
+        val_str = str(val).strip()
+        if not val_str:
+            return None
+        return date.fromisoformat(val_str)
+
+    if model_field in INT_FIELDS:
+        if isinstance(val, (int, float)):
+            return int(val)
+        val_str = str(val).strip()
+        if not val_str:
+            return None
+        # Extract numeric part (e.g., "최초 매각 = 0" → "0")
+        cleaned = val_str.replace(",", "")
+        try:
+            return int(float(cleaned))
+        except (ValueError, OverflowError):
+            # Try extracting the last number from the string
+            nums = re.findall(r'-?\d+\.?\d*', cleaned)
+            return int(float(nums[-1])) if nums else None
+
+    val_str = str(val).strip()
+    return val_str if val_str else None
 
 
 async def import_excel(
@@ -96,7 +145,11 @@ async def import_excel(
     pool_id: int,
     user: User,
     db: AsyncSession,
+    bond_type: str = "A",
 ) -> BondImportResult:
+    if bond_type not in BOND_TYPES:
+        raise HTTPException(400, f"지원하지 않는 채권유형입니다: {bond_type}")
+
     content = await file.read()
     wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     ws = wb.active
@@ -109,13 +162,24 @@ async def import_excel(
         )
 
     # First row = headers
-    headers = [str(h).strip() if h else "" for h in rows[0]]
+    headers = [re.sub(r'\s+', ' ', str(h)).strip() if h else "" for h in rows[0]]
 
-    # Build header index → model field mapping
-    header_map: dict[int, str] = {}
+    # Build combined column map for this bond_type
+    combined_map = dict(COMMON_COLUMN_MAP)
+    combined_map[OPB_COLUMN] = "opb"
+    type_map = TYPE_SPECIFIC_MAP.get(bond_type, {})
+    combined_map.update(type_map)
+
+    # Build header index → (model_field, is_extra) mapping
+    header_map: dict[int, tuple[str, bool]] = {}
+    model_fields = set(combined_map.values())
     for idx, h in enumerate(headers):
-        if h in COLUMN_MAP:
-            header_map[idx] = COLUMN_MAP[h]
+        if h in combined_map:
+            field = combined_map[h]
+            header_map[idx] = (field, False)
+        elif h:
+            # Store all other columns in extra_data
+            header_map[idx] = (h, True)
 
     batch_id = str(uuid4())[:8]
     bonds: list[Bond] = []
@@ -123,12 +187,17 @@ async def import_excel(
     row_count = 0
 
     for row_idx, row in enumerate(rows[1:], start=2):
-        # Skip description/guide row (row 2) and empty rows
+        # Skip description/guide row (row 2) — check if first value looks like sample data
         if row_idx == 2:
-            # Check if this looks like the guide row
-            first_val = str(row[0]).strip() if row[0] else ""
-            if first_val.startswith("예:") or first_val == "":
+            # If first cell is a date or has sample-like content, it's likely data, not a guide row
+            first_val = row[0] if row[0] else None
+            if first_val is None or str(first_val).strip() == "":
                 continue
+            # Check if it looks like a guide row (text description, not a real date)
+            first_str = str(first_val).strip()
+            if first_str.startswith("예:") or first_str.startswith("("):
+                continue
+            # Otherwise it's a data row — process it below
 
         # Skip fully empty rows
         if all(cell is None or str(cell).strip() == "" for cell in row):
@@ -138,30 +207,39 @@ async def import_excel(
         try:
             bond_data: dict = {
                 "pool_id": pool_id,
+                "bond_type": bond_type,
                 "import_batch": batch_id,
                 "created_by": user.id,
             }
-            for col_idx, model_field in header_map.items():
-                if col_idx < len(row):
-                    val = row[col_idx]
-                    if val is not None:
-                        # Handle datetime/date objects from Excel directly
-                        if model_field in DATE_FIELDS:
-                            if isinstance(val, (date, datetime)):
-                                val = val if isinstance(val, date) and not isinstance(val, datetime) else val.date() if isinstance(val, datetime) else val
-                            else:
-                                val_str = str(val).strip()
-                                val = date.fromisoformat(val_str) if val_str else None
-                        elif model_field in INT_FIELDS:
-                            val_str = str(val).strip()
-                            if not val_str:
-                                val = None
-                            else:
-                                val = int(float(val_str.replace(",", "")))
-                        else:
-                            val_str = str(val).strip()
-                            val = val_str if val_str else None
-                    bond_data[model_field] = val
+            extra_data: dict = {}
+
+            for col_idx, (field, is_extra) in header_map.items():
+                if col_idx >= len(row):
+                    continue
+                val = row[col_idx]
+                if val is None or str(val).strip() == "":
+                    continue
+
+                if is_extra:
+                    # Store in extra_data JSON
+                    if isinstance(val, (date, datetime)):
+                        extra_data[field] = val.isoformat() if isinstance(val, date) and not isinstance(val, datetime) else val.date().isoformat()
+                    else:
+                        val_str = str(val).strip()
+                        # Try to convert numeric strings
+                        try:
+                            num = float(val_str.replace(",", ""))
+                            extra_data[field] = int(num) if num == int(num) else num
+                        except (ValueError, OverflowError):
+                            extra_data[field] = val_str
+                else:
+                    # Skip internal fields (prefixed with _)
+                    if field.startswith("_"):
+                        continue
+                    bond_data[field] = _parse_value(val, field)
+
+            if extra_data:
+                bond_data["extra_data"] = extra_data
 
             bonds.append(Bond(**bond_data))
         except Exception as e:

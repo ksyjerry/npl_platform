@@ -134,6 +134,19 @@ async def reply_consulting(
     return await AdminService(db).reply_consulting(consulting_id, data, admin, request)
 
 
+@router.patch(
+    "/consulting/{consulting_id}/reply", response_model=ConsultingAdminResponse
+)
+async def edit_consulting_reply(
+    consulting_id: int,
+    data: ConsultingReplySchema,
+    request: Request,
+    admin: User = Depends(require_role("admin", "accountant")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await AdminService(db).edit_consulting_reply(consulting_id, data, admin, request)
+
+
 # ── Pool Participants (CR-10) ──
 
 

@@ -300,6 +300,80 @@ class AdminService:
             created_at=row.Consulting.created_at,
         )
 
+    async def edit_consulting_reply(
+        self,
+        consulting_id: int,
+        data: ConsultingReplySchema,
+        admin: User,
+        request: Request,
+    ) -> ConsultingAdminResponse:
+        result = await self.db.execute(
+            select(Consulting).where(Consulting.id == consulting_id)
+        )
+        consulting = result.scalar_one_or_none()
+        if not consulting:
+            raise HTTPException(404, "상담을 찾을 수 없습니다.")
+
+        if consulting.status != "replied":
+            raise HTTPException(400, "답변이 등록되지 않은 상담은 수정할 수 없습니다.")
+
+        old_data = {
+            "reply": consulting.reply,
+            "replied_at": consulting.replied_at.isoformat() if consulting.replied_at else None,
+            "replied_by": consulting.replied_by,
+        }
+
+        consulting.reply = data.reply
+        consulting.replied_by = admin.id
+        consulting.replied_at = datetime.now(timezone.utc)
+
+        new_data = {
+            "reply": consulting.reply,
+            "replied_at": consulting.replied_at.isoformat(),
+            "replied_by": consulting.replied_by,
+        }
+
+        await self.audit_repo.create(
+            table_name="consultings",
+            record_id=consulting.id,
+            action="UPDATE",
+            performed_by=admin.id,
+            ip_address=request.client.host if request.client else "unknown",
+            reason="상담 답변 수정",
+            old_data=old_data,
+            new_data=new_data,
+        )
+
+        await self.db.commit()
+
+        detail_result = await self.db.execute(
+            select(
+                Consulting,
+                User.name.label("user_name"),
+                Company.name.label("company_name"),
+            )
+            .join(User, Consulting.user_id == User.id)
+            .outerjoin(Company, User.company_id == Company.id)
+            .where(Consulting.id == consulting_id)
+        )
+        row = detail_result.one()
+
+        return ConsultingAdminResponse(
+            id=row.Consulting.id,
+            type=row.Consulting.type,
+            name=row.Consulting.name,
+            position=row.Consulting.position,
+            email=row.Consulting.email,
+            title=row.Consulting.title,
+            content=row.Consulting.content,
+            status=row.Consulting.status,
+            reply=row.Consulting.reply,
+            replied_at=row.Consulting.replied_at,
+            user_name=row.user_name,
+            company_name=row.company_name,
+            created_at=row.Consulting.created_at,
+        )
+
     # ── Company CRUD ──
 
     async def get_companies(

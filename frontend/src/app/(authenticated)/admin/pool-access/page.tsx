@@ -113,7 +113,7 @@ function PoolAccessContent() {
         {error && (
           <div className="mb-4 px-4 py-3 text-sm" style={{ backgroundColor: "#FEF2F2", color: "#DC2626", borderRadius: "4px" }}>
             {error}
-            <button className="ml-4 underline" onClick={() => setError("")}>닫기</button>
+            <button className="ml-4 underline cursor-pointer" onClick={() => setError("")}>닫기</button>
           </div>
         )}
 
@@ -171,7 +171,7 @@ function PoolAccessContent() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handleRemove(p.company_id)}
-                          className="text-xs hover:underline"
+                          className="text-xs hover:underline cursor-pointer"
                           style={{ color: "#E0301E" }}
                         >
                           제거

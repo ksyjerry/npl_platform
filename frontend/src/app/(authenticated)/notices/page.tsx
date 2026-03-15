@@ -145,7 +145,7 @@ export default function NoticesPage() {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className="px-3 py-1 text-sm border"
+                className="px-3 py-1 text-sm border cursor-pointer"
                 style={{
                   borderColor: p === page ? "#D04A02" : "#DEDEDE",
                   color: p === page ? "#D04A02" : "#464646",

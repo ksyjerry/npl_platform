@@ -25,7 +25,7 @@ export default function ConsultCTA() {
           <div className="flex gap-4 shrink-0">
             <button
               onClick={() => setModalType("selling")}
-              className="flex items-center gap-3 px-7 py-3.5 bg-white text-sm font-semibold transition-shadow hover:shadow-md"
+              className="flex items-center gap-3 px-7 py-3.5 bg-white text-sm font-semibold transition-shadow hover:shadow-md cursor-pointer"
               style={{
                 color: "#2D2D2D",
                 border: "1.5px solid #DEDEDE",
@@ -37,7 +37,7 @@ export default function ConsultCTA() {
             </button>
             <button
               onClick={() => setModalType("buying")}
-              className="flex items-center gap-3 px-7 py-3.5 bg-white text-sm font-semibold transition-shadow hover:shadow-md"
+              className="flex items-center gap-3 px-7 py-3.5 bg-white text-sm font-semibold transition-shadow hover:shadow-md cursor-pointer"
               style={{
                 color: "#D04A02",
                 border: "1.5px solid #D04A02",
