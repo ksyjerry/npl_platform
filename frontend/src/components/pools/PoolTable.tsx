@@ -39,29 +39,29 @@ export default function PoolTable({ items, startIndex }: Props) {
   }
 
   const columns = [
-    { key: "no", label: "No", align: "center" as const },
-    { key: "name", label: "Pool명", align: "left" as const },
-    { key: "collateral_large", label: "담보유형(대)", align: "center" as const },
-    { key: "bid_date", label: "입찰기일", align: "center" as const },
-    { key: "closing_date", label: "거래종결일", align: "center" as const },
-    { key: "seller_name", label: "매도인", align: "left" as const },
-    { key: "buyer_name", label: "매수인", align: "left" as const },
-    { key: "opb", label: "OPB(원)", align: "right" as const },
-    { key: "sale_ratio", label: "매각가율", align: "right" as const },
-    { key: "status", label: "상태", align: "center" as const },
-    { key: "detail", label: "상세보기", align: "center" as const },
+    { key: "no", label: "No", align: "center" as const, width: "50px" },
+    { key: "name", label: "Pool명", align: "left" as const, width: "200px" },
+    { key: "collateral_large", label: "담보유형(대)", align: "center" as const, width: "100px" },
+    { key: "bid_date", label: "입찰기일", align: "center" as const, width: "110px" },
+    { key: "closing_date", label: "거래종결일", align: "center" as const, width: "110px" },
+    { key: "seller_name", label: "매도인", align: "left" as const, width: "140px" },
+    { key: "buyer_name", label: "매수인", align: "left" as const, width: "140px" },
+    { key: "opb", label: "OPB(원)", align: "right" as const, width: "140px" },
+    { key: "sale_ratio", label: "매각가율", align: "right" as const, width: "90px" },
+    { key: "status", label: "상태", align: "center" as const, width: "80px" },
+    { key: "detail", label: "상세보기", align: "center" as const, width: "80px" },
   ];
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm" style={{ minWidth: "1000px" }}>
+      <table className="w-full text-sm" style={{ minWidth: "1000px", tableLayout: "fixed" }}>
         <thead>
           <tr style={{ backgroundColor: "#2D2D2D" }}>
             {columns.map((col) => (
               <th
                 key={col.key}
                 className="px-4 py-3 font-semibold text-white whitespace-nowrap"
-                style={{ textAlign: col.align }}
+                style={{ textAlign: col.align, width: col.width }}
               >
                 {col.label}
               </th>
